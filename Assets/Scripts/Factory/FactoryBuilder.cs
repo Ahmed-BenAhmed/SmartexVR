@@ -107,11 +107,23 @@ namespace Smartex.Factory
                 // The FBX ships with its own Camera + AudioListener (and possibly Lights).
                 // With 8 copies instantiated, one of them out-depths the real Main Camera
                 // and the Game view renders from a machine's viewpoint. Strip them.
-                foreach (var c in go.GetComponentsInChildren<UnityEngine.Camera>(true)) SafeDestroy(c);
-                foreach (var a in go.GetComponentsInChildren<AudioListener>(true))     SafeDestroy(a);
-                // Lights inside the FBX would also double-count — kill them so our
-                // authored lighting rig in BuildLighting() stays in control.
-                foreach (var l in go.GetComponentsInChildren<Light>(true))             SafeDestroy(l);
+                // URP adds UniversalAdditionalCameraData / UniversalAdditionalLightData as
+                // required components — those must be destroyed first or Unity refuses to
+                // remove Camera / Light.
+                foreach (var c in go.GetComponentsInChildren<UnityEngine.Camera>(true))
+                {
+                    var urpData = c.GetComponent("UniversalAdditionalCameraData");
+                    if (urpData != null) SafeDestroy(urpData);
+                    SafeDestroy(c);
+                }
+                foreach (var a in go.GetComponentsInChildren<AudioListener>(true)) SafeDestroy(a);
+                // Lights inside the FBX would double-count with our rig — remove them.
+                foreach (var l in go.GetComponentsInChildren<Light>(true))
+                {
+                    var urpData = l.GetComponent("UniversalAdditionalLightData");
+                    if (urpData != null) SafeDestroy(urpData);
+                    SafeDestroy(l);
+                }
 
                 // Auto-fit: scale the FBX so its bounding box max-dimension is ~2m,
                 // and lift it so the bottom sits on the floor (y=0).

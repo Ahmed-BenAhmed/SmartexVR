@@ -3,6 +3,7 @@
     "rootNamespace": "Smartex.AR.Maintenance",
     "references": [
         "Smartex.Core",
+        "Smartex.Game",
         "Smartex.AR.Core",
         "Smartex.AR.Recognition",
         "Smartex.AR.Overlay",

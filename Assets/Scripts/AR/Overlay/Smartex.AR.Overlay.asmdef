@@ -3,6 +3,7 @@
     "rootNamespace": "Smartex.AR.Overlay",
     "references": [
         "Smartex.Core",
+        "Smartex.Game",
         "Smartex.AR.Core",
         "Smartex.AR.Recognition",
         "Unity.XR.ARFoundation",

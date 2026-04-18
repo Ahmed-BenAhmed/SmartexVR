@@ -3,9 +3,11 @@
     "rootNamespace": "Smartex.AR.Recognition",
     "references": [
         "Smartex.Core",
+        "Smartex.Game",
         "Smartex.AR.Core",
         "Unity.XR.ARFoundation",
-        "Unity.XR.ARSubsystems"
+        "Unity.XR.ARSubsystems",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

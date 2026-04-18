@@ -1,0 +1,13 @@
+{
+    "name": "Smartex.Editor",
+    "rootNamespace": "Smartex.Editor",
+    "references": [
+        "Smartex.Core",
+        "Smartex.Game"
+    ],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "autoReferenced": false
+}

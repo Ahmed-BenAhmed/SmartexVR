@@ -3,13 +3,15 @@
     "rootNamespace": "Smartex.AR.QA",
     "references": [
         "Smartex.Core",
+        "Smartex.Game",
         "Smartex.AR.Core",
         "Smartex.AR.Recognition",
         "Smartex.AR.Overlay",
         "Smartex.AR.Maintenance",
         "Smartex.AR.RemoteAssist",
         "Smartex.AR.Training",
-        "Unity.XR.ARFoundation"
+        "Unity.XR.ARFoundation",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

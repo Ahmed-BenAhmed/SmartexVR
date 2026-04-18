@@ -1,11 +1,7 @@
 {
-    "name": "Smartex.AR.Core",
-    "rootNamespace": "Smartex.AR.Core",
+    "name": "Smartex.Core",
+    "rootNamespace": "Smartex.Core",
     "references": [
-        "Smartex.Core",
-        "Smartex.Game",
-        "Unity.XR.ARFoundation",
-        "Unity.XR.ARSubsystems",
         "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
