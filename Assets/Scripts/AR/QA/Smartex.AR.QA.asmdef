@@ -1,0 +1,19 @@
+{
+    "name": "Smartex.AR.QA",
+    "rootNamespace": "Smartex.AR.QA",
+    "references": [
+        "Smartex.Core",
+        "Smartex.AR.Core",
+        "Smartex.AR.Recognition",
+        "Smartex.AR.Overlay",
+        "Smartex.AR.Maintenance",
+        "Smartex.AR.RemoteAssist",
+        "Smartex.AR.Training",
+        "Unity.XR.ARFoundation"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "autoReferenced": true
+}

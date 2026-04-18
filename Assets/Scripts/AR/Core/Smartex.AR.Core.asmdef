@@ -1,0 +1,14 @@
+{
+    "name": "Smartex.AR.Core",
+    "rootNamespace": "Smartex.AR.Core",
+    "references": [
+        "Smartex.Core",
+        "Unity.XR.ARFoundation",
+        "Unity.XR.ARSubsystems"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "autoReferenced": true
+}

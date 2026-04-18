@@ -1,0 +1,16 @@
+{
+    "name": "Smartex.AR.RemoteAssist",
+    "rootNamespace": "Smartex.AR.RemoteAssist",
+    "references": [
+        "Smartex.Core",
+        "Smartex.AR.Core",
+        "Smartex.AR.Overlay",
+        "Unity.XR.ARFoundation",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "autoReferenced": true
+}

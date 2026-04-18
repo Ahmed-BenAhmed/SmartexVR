@@ -1,0 +1,17 @@
+{
+    "name": "Smartex.AR.Overlay",
+    "rootNamespace": "Smartex.AR.Overlay",
+    "references": [
+        "Smartex.Core",
+        "Smartex.AR.Core",
+        "Smartex.AR.Recognition",
+        "Unity.XR.ARFoundation",
+        "Unity.XR.ARSubsystems",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "autoReferenced": true
+}
