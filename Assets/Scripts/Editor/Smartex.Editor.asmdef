@@ -3,7 +3,10 @@
     "rootNamespace": "Smartex.Editor",
     "references": [
         "Smartex.Core",
-        "Smartex.Game"
+        "Smartex.Game",
+        "Unity.TextMeshPro",
+        "Unity.InputSystem",
+        "Unity.EditorCoroutines.Editor"
     ],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],

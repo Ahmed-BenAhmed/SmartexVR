@@ -8,6 +8,7 @@
         "Smartex.AR.Recognition",
         "Unity.XR.ARFoundation",
         "Unity.XR.ARSubsystems",
+        "Unity.XR.CoreUtils",
         "Unity.TextMeshPro"
     ],
     "includePlatforms": [],

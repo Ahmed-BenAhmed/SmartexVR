@@ -12,7 +12,9 @@ namespace Smartex.Core
         public static DataManager Instance { get; private set; }
 
         public event Action<FactorySnapshot> OnSnapshotUpdated;
+#pragma warning disable CS0067  // reserved for Wave 2 alert streaming
         public event Action<AlertEvent>      OnAlertReceived;
+#pragma warning restore CS0067
         public event Action<string>          OnConnectionError;
         public event Action                  OnConnectionRestored;
 

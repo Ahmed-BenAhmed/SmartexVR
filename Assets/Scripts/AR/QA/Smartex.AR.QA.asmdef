@@ -11,6 +11,8 @@
         "Smartex.AR.RemoteAssist",
         "Smartex.AR.Training",
         "Unity.XR.ARFoundation",
+        "Unity.XR.ARSubsystems",
+        "Unity.XR.CoreUtils",
         "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
