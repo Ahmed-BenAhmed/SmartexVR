@@ -1,20 +1,20 @@
-name: Unity Build
+name: Unity CI
 
-# Builds the SmartexVR project for Android (always) and iOS (when a macOS
-# runner is available). Runs on PRs to master and on pushes to master.
+# Tests + secrets guard only. Android/iOS builds are handled by Unity Build
+# Automation (cloud.unity.com → Build Automation), because Unity Personal
+# entitlements cannot be activated in ephemeral Linux containers — the
+# LicensingClient phones home for an access token that doesn't exist in CI.
+# UBA provisions the license automatically for Personal users.
 #
 # Prerequisites (configure once in repo Settings → Secrets):
-#   UNITY_LICENSE           Full <Unity_*_License.ulf> contents (Personal or Pro)
-#   UNITY_EMAIL             The email tied to the license
-#   UNITY_PASSWORD          Password for the Unity account
-#   ANDROID_KEYSTORE_BASE64 (optional, release only) base64 of the upload .keystore
-#   ANDROID_KEYSTORE_PASS   (optional, release only) keystore password
-#   ANDROID_KEYALIAS_NAME   (optional, release only)
-#   ANDROID_KEYALIAS_PASS   (optional, release only)
+#   UNITY_LICENSE   Full UnityEntitlementLicense.xml contents
+#   UNITY_EMAIL     The email tied to the license
+#   UNITY_PASSWORD  Password for the Unity account
 #
-# This is a skeleton — tune the Unity version / build targets / caching as the
-# project matures. game-ci/unity-builder tracks most Unity versions within a
-# day or two of release.
+# Note: if the test job also starts failing with entitlement errors, drop it
+# and run tests locally before pushing. unity-test-runner has historically
+# been more forgiving than unity-builder, but both depend on the same
+# LicensingClient — no guarantees.
 
 on:
   pull_request:
@@ -24,7 +24,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: unity-build-${{ github.ref }}
+  group: unity-ci-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -32,127 +32,6 @@ env:
   PROJECT_PATH: .
 
 jobs:
-  # ── Android APK — runs on every PR ─────────────────────────────────────────
-  build-android:
-    name: Build Android APK
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      # Ubuntu runners ship with ~14 GB free. The Unity Android editor image
-      # is ~10 GB and the build itself needs another several GB — without
-      # this step, `docker pull` dies mid-layer with ENOSPC. This action
-      # strips pre-installed dotnet / haskell / swift / android-sdk that
-      # Unity doesn't touch and reclaims ~30 GB.
-      - name: Free up runner disk
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: false
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          swap-storage: true
-          docker-images: false
-
-      - uses: actions/checkout@v4
-        with:
-          lfs: true
-
-      - uses: actions/cache@v4
-        with:
-          path: Library
-          key: Library-Android-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
-          restore-keys: |
-            Library-Android-
-            Library-
-
-      # unity-builder mounts the host folder $RUNNER_TEMP/_github_home as
-      # /root inside the container. So writing the license here on the host
-      # makes it appear at /root/.local/share/unity3d/Unity/licenses/ inside
-      # the container — exactly where Unity 6 looks on startup. This bypasses
-      # unity-builder's own activation (which is broken for Unity 6 Personal
-      # entitlement licenses: after the XML activates, a legacy serial check
-      # trips on the default UNITY_SERIAL=x placeholder and aborts the build
-      # with code 20110).
-      - name: Pre-seed Unity entitlement license
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-        run: |
-          LICENSE_DIR="$RUNNER_TEMP/_github_home/.local/share/unity3d/Unity/licenses"
-          mkdir -p "$LICENSE_DIR"
-          printf '%s' "$UNITY_LICENSE" > "$LICENSE_DIR/UnityEntitlementLicense.xml"
-          BYTES=$(wc -c < "$LICENSE_DIR/UnityEntitlementLicense.xml")
-          echo "Wrote $BYTES bytes to $LICENSE_DIR/UnityEntitlementLicense.xml"
-          if [ "$BYTES" -lt 1000 ]; then
-            echo "::error::License file is suspiciously small — UNITY_LICENSE secret may be empty or truncated"
-            exit 1
-          fi
-          ls -la "$LICENSE_DIR"
-
-      - uses: game-ci/unity-builder@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-        with:
-          unityVersion: ${{ env.UNITY_VERSION }}
-          targetPlatform: Android
-          projectPath: ${{ env.PROJECT_PATH }}
-          buildName: SmartexVR
-          androidExportType: androidPackage
-          # Skip unity-builder's broken activation step; we pre-seeded the
-          # license above so Unity finds it on its own when it launches.
-          skipActivation: true
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: SmartexVR-Android-${{ github.sha }}
-          path: build/Android
-          retention-days: 14
-
-  # ── iOS build — best-effort; only runs if a macOS runner minute budget
-  #    is available. macOS minutes cost ~10× ubuntu, so gate on push to master
-  #    rather than every PR.
-  build-ios:
-    name: Build iOS (optional)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    runs-on: macos-latest
-    timeout-minutes: 90
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          lfs: true
-
-      - uses: actions/cache@v4
-        with:
-          path: Library
-          key: Library-iOS-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
-          restore-keys: |
-            Library-iOS-
-            Library-
-
-      - uses: game-ci/unity-builder@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          # Force empty — otherwise unity-builder defaults it to the string
-          # "x" and Unity 6's LicensingClient validates that as a Pro serial
-          # AFTER the Personal entitlement activation succeeds, fails with
-          # code 20110 ("serial invalid"), and aborts the whole build.
-          UNITY_SERIAL: ""
-        with:
-          unityVersion: ${{ env.UNITY_VERSION }}
-          targetPlatform: iOS
-          projectPath: ${{ env.PROJECT_PATH }}
-          buildName: SmartexVR
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: SmartexVR-iOS-Xcode-${{ github.sha }}
-          path: build/iOS
-          retention-days: 14
-
   # ── EditMode + PlayMode tests ──────────────────────────────────────────────
   test:
     name: Unity Tests
@@ -181,6 +60,22 @@ jobs:
           restore-keys: |
             Library-Test-
             Library-
+
+      # Same host-side pre-seed trick as before: write the entitlement XML to
+      # the host path that gets bind-mounted to /root inside the test-runner
+      # container. Not guaranteed to work for Personal (see header comment).
+      - name: Pre-seed Unity entitlement license
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        run: |
+          LICENSE_DIR="$RUNNER_TEMP/_github_home/.local/share/unity3d/Unity/licenses"
+          mkdir -p "$LICENSE_DIR"
+          printf '%s' "$UNITY_LICENSE" > "$LICENSE_DIR/UnityEntitlementLicense.xml"
+          BYTES=$(wc -c < "$LICENSE_DIR/UnityEntitlementLicense.xml")
+          echo "Wrote $BYTES bytes to $LICENSE_DIR/UnityEntitlementLicense.xml"
+          if [ "$BYTES" -lt 1000 ]; then
+            echo "::warning::License file is suspiciously small — UNITY_LICENSE secret may be empty or truncated"
+          fi
 
       - uses: game-ci/unity-test-runner@v4
         id: tests
