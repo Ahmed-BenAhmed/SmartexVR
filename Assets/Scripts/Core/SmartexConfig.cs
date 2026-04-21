@@ -23,7 +23,7 @@ namespace Smartex.Core
 
         [Header("Network")]
         public string relayBaseUrl     = "http://localhost:8000";
-        public string influxUrl        = "https://smartex.ahmedbenahmed.com/influxdb";
+        public string influxUrl        = "https://influxdb.smartex.ahmedbenahmed.com";
         public string influxToken      = "smartex-dev-token-change-me";
         public string influxOrg        = "smartex";
         public string influxBucket     = "telemetry";
