@@ -66,6 +66,29 @@ jobs:
             Library-Android-
             Library-
 
+      # unity-builder mounts the host folder $RUNNER_TEMP/_github_home as
+      # /root inside the container. So writing the license here on the host
+      # makes it appear at /root/.local/share/unity3d/Unity/licenses/ inside
+      # the container — exactly where Unity 6 looks on startup. This bypasses
+      # unity-builder's own activation (which is broken for Unity 6 Personal
+      # entitlement licenses: after the XML activates, a legacy serial check
+      # trips on the default UNITY_SERIAL=x placeholder and aborts the build
+      # with code 20110).
+      - name: Pre-seed Unity entitlement license
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        run: |
+          LICENSE_DIR="$RUNNER_TEMP/_github_home/.local/share/unity3d/Unity/licenses"
+          mkdir -p "$LICENSE_DIR"
+          printf '%s' "$UNITY_LICENSE" > "$LICENSE_DIR/UnityEntitlementLicense.xml"
+          BYTES=$(wc -c < "$LICENSE_DIR/UnityEntitlementLicense.xml")
+          echo "Wrote $BYTES bytes to $LICENSE_DIR/UnityEntitlementLicense.xml"
+          if [ "$BYTES" -lt 1000 ]; then
+            echo "::error::License file is suspiciously small — UNITY_LICENSE secret may be empty or truncated"
+            exit 1
+          fi
+          ls -la "$LICENSE_DIR"
+
       - uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -77,16 +100,9 @@ jobs:
           projectPath: ${{ env.PROJECT_PATH }}
           buildName: SmartexVR
           androidExportType: androidPackage
-          # Sidestep unity-builder's broken Unity-6 Personal activation
-          # (it runs a legacy serial validation after the entitlement
-          # license activates, trips on the "x" fallback, fails with
-          # code 20110). We pre-seed the entitlement XML where the
-          # editor looks for it and let Unity activate itself on launch.
+          # Skip unity-builder's broken activation step; we pre-seeded the
+          # license above so Unity finds it on its own when it launches.
           skipActivation: true
-          preBuildSteps: |
-            mkdir -p /root/.local/share/unity3d/Unity/licenses
-            printf '%s' "$UNITY_LICENSE" > /root/.local/share/unity3d/Unity/licenses/UnityEntitlementLicense.xml
-            echo "Pre-seeded entitlement license ($(wc -c < /root/.local/share/unity3d/Unity/licenses/UnityEntitlementLicense.xml) bytes)"
 
       - uses: actions/upload-artifact@v4
         with:
