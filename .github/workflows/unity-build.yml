@@ -71,17 +71,22 @@ jobs:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          # Force empty — otherwise unity-builder defaults it to the string
-          # "x" and Unity 6's LicensingClient validates that as a Pro serial
-          # AFTER the Personal entitlement activation succeeds, fails with
-          # code 20110 ("serial invalid"), and aborts the whole build.
-          UNITY_SERIAL: ""
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
           targetPlatform: Android
           projectPath: ${{ env.PROJECT_PATH }}
           buildName: SmartexVR
           androidExportType: androidPackage
+          # Sidestep unity-builder's broken Unity-6 Personal activation
+          # (it runs a legacy serial validation after the entitlement
+          # license activates, trips on the "x" fallback, fails with
+          # code 20110). We pre-seed the entitlement XML where the
+          # editor looks for it and let Unity activate itself on launch.
+          skipActivation: true
+          preBuildSteps: |
+            mkdir -p /root/.local/share/unity3d/Unity/licenses
+            printf '%s' "$UNITY_LICENSE" > /root/.local/share/unity3d/Unity/licenses/UnityEntitlementLicense.xml
+            echo "Pre-seeded entitlement license ($(wc -c < /root/.local/share/unity3d/Unity/licenses/UnityEntitlementLicense.xml) bytes)"
 
       - uses: actions/upload-artifact@v4
         with:
