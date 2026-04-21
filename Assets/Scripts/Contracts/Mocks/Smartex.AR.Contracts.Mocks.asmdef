@@ -1,0 +1,16 @@
+{
+    "name": "Smartex.AR.Contracts.Mocks",
+    "rootNamespace": "Smartex.AR.Contracts.Mocks",
+    "references": [
+        "Smartex.Core",
+        "Smartex.AR.Contracts"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
