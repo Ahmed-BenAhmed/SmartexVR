@@ -1,0 +1,25 @@
+{
+    "name": "Smartex.Tests.EditMode",
+    "rootNamespace": "Smartex.Tests",
+    "references": [
+        "Smartex.Core",
+        "Smartex.AR.Contracts",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

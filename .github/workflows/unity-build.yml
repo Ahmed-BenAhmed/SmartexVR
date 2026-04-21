@@ -1,0 +1,163 @@
+name: Unity Build
+
+# Builds the SmartexVR project for Android (always) and iOS (when a macOS
+# runner is available). Runs on PRs to master and on pushes to master.
+#
+# Prerequisites (configure once in repo Settings → Secrets):
+#   UNITY_LICENSE           Full <Unity_*_License.ulf> contents (Personal or Pro)
+#   UNITY_EMAIL             The email tied to the license
+#   UNITY_PASSWORD          Password for the Unity account
+#   ANDROID_KEYSTORE_BASE64 (optional, release only) base64 of the upload .keystore
+#   ANDROID_KEYSTORE_PASS   (optional, release only) keystore password
+#   ANDROID_KEYALIAS_NAME   (optional, release only)
+#   ANDROID_KEYALIAS_PASS   (optional, release only)
+#
+# This is a skeleton — tune the Unity version / build targets / caching as the
+# project matures. game-ci/unity-builder tracks most Unity versions within a
+# day or two of release.
+
+on:
+  pull_request:
+    branches: [ master ]
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+concurrency:
+  group: unity-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UNITY_VERSION: 6000.3.11f1
+  PROJECT_PATH: .
+
+jobs:
+  # ── Android APK — runs on every PR ─────────────────────────────────────────
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-Android-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-Android-
+            Library-
+
+      - uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: Android
+          projectPath: ${{ env.PROJECT_PATH }}
+          buildName: SmartexVR
+          androidAppBundle: false
+          androidExportType: androidPackage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SmartexVR-Android-${{ github.sha }}
+          path: build/Android
+          retention-days: 14
+
+  # ── iOS build — best-effort; only runs if a macOS runner minute budget
+  #    is available. macOS minutes cost ~10× ubuntu, so gate on push to master
+  #    rather than every PR.
+  build-ios:
+    name: Build iOS (optional)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-iOS-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-iOS-
+            Library-
+
+      - uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: iOS
+          projectPath: ${{ env.PROJECT_PATH }}
+          buildName: SmartexVR
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SmartexVR-iOS-Xcode-${{ github.sha }}
+          path: build/iOS
+          retention-days: 14
+
+  # ── EditMode + PlayMode tests ──────────────────────────────────────────────
+  test:
+    name: Unity Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-Test-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-Test-
+            Library-
+
+      - uses: game-ci/unity-test-runner@v4
+        id: tests
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          projectPath: ${{ env.PROJECT_PATH }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Test-results-${{ github.sha }}
+          path: ${{ steps.tests.outputs.artifactsPath }}
+
+  # ── Secrets guard — fail if anyone commits a Vuforia key shape ─────────────
+  secrets-guard:
+    name: Secrets guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject committed Vuforia-shaped keys
+        run: |
+          # Vuforia license keys are long (>= 500 chars) base64-ish blobs. The
+          # conservative guard: any file that contains a double-quoted string
+          # longer than 400 chars outside of LICENSE/THIRD-PARTY notices.
+          set -e
+          if grep -RInE '"[A-Za-z0-9+/=]{400,}"' \
+               --include='*.cs' --include='*.unity' --include='*.asset' \
+               --exclude-dir='Library' --exclude-dir='Build' .; then
+            echo "::error::Possible embedded secret detected. Load secrets via ARConfig.Instance at runtime instead."
+            exit 1
+          fi
