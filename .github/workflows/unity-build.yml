@@ -38,6 +38,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      # Ubuntu runners ship with ~14 GB free. The Unity Android editor image
+      # is ~10 GB and the build itself needs another several GB — without
+      # this step, `docker pull` dies mid-layer with ENOSPC. This action
+      # strips pre-installed dotnet / haskell / swift / android-sdk that
+      # Unity doesn't touch and reclaims ~30 GB.
+      - name: Free up runner disk
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+          docker-images: false
+
       - uses: actions/checkout@v4
         with:
           lfs: true
@@ -60,7 +76,6 @@ jobs:
           targetPlatform: Android
           projectPath: ${{ env.PROJECT_PATH }}
           buildName: SmartexVR
-          androidAppBundle: false
           androidExportType: androidPackage
 
       - uses: actions/upload-artifact@v4
@@ -113,6 +128,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      - name: Free up runner disk
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+          docker-images: false
+
       - uses: actions/checkout@v4
         with:
           lfs: true
