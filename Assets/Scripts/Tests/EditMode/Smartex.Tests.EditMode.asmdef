@@ -4,6 +4,7 @@
     "references": [
         "Smartex.Core",
         "Smartex.AR.Contracts",
+        "Smartex.AR.Contracts.Mocks",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],
