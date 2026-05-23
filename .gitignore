@@ -62,6 +62,18 @@ crashlytics-build.properties
 # VS Code
 .vscode/
 
+# Local overrides (may contain secrets)
+[Aa]ssets/[Rr]esources/ARConfig_Local.asset
+[Aa]ssets/[Rr]esources/ARConfig_Local.asset.meta
+
+# Local generated artifacts (do not commit)
+.utmp/
+apkA/
+QCAR/
+[Aa]ssets/_Recovery/
+tools/target-generator/out/
+SmartexVR_BurstDebugInformation_DoNotShip/
+
 # Mac
 .DS_Store
 .DS_Store?

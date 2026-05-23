@@ -9,11 +9,15 @@
         "Unity.XR.ARFoundation",
         "Unity.XR.ARSubsystems",
         "Unity.XR.CoreUtils",
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "VuforiaScripts"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
+    "precompiledReferences": [
+        "Vuforia.Unity.Engine.dll"
+    ],
     "autoReferenced": true
 }

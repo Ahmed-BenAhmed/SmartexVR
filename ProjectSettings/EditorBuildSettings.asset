@@ -4,6 +4,15 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
-  m_configObjects: {}
+  m_Scenes:
+  - enabled: 1
+    path: Assets/SmatexA.unity
+    guid: 956d441bc69aa8b4183ee5d8b5b305c1
+  m_configObjects:
+    Unity.XR.Oculus.Settings: {fileID: 11400000, guid: f3029bb88004e7c4fade2b77d1a6f032, type: 2}
+    UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: 223fb1a9a732c8948bf47e8055a32293, type: 2}
+    UnityEditor.XR.ARKit.ARKitSettings: {fileID: 11400000, guid: 7898fc974a344e84cbb846b3a8d79a06, type: 2}
+    com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: 1ca6d3f2bd1edd340ab1d15f8f3a99b4, type: 2}
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 1665f0a5187e76a438ec98875f22b597, type: 2}
+    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: 469249509142baf428852dcf86785a33, type: 2}
   m_UseUCBPForAssetBundles: 0

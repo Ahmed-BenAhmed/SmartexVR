@@ -24,7 +24,14 @@ namespace Smartex.Core
             get
             {
                 if (_instance == null)
-                    _instance = Resources.Load<ARConfig>("ARConfig");
+                {
+                    // Local override for secrets (e.g. Vuforia license key).
+                    // Create it as: Assets/Resources/ARConfig_Local.asset
+                    // This file should be gitignored.
+                    _instance = Resources.Load<ARConfig>("ARConfig_Local");
+                    if (_instance == null)
+                        _instance = Resources.Load<ARConfig>("ARConfig");
+                }
                 if (_instance == null)
                 {
                     _instance = CreateInstance<ARConfig>();
@@ -75,6 +82,9 @@ namespace Smartex.Core
 
         // ── Performance (Module G) ───────────────────────────────────────────
         [Header("Performance / feature flags")]
+        [Tooltip("Shows a small on-screen debug HUD for tracking (FOUND/LOST + deviceId). Useful on phone when no augmentation is present.")]
+        public bool showTrackingDebugHud = false;
+
         [Tooltip("Hard cap for AR overlay panels visible at once.")]
         public int maxConcurrentPanels = 8;
 
