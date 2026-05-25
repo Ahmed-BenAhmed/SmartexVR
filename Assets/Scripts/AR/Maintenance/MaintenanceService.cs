@@ -32,10 +32,17 @@ namespace Smartex.AR.Maintenance
         {
             ARServices.Register((IMaintenanceService)this);
             _cfg = SmartexConfig.Instance;
-            // Always use SmartexConfig for URL — never hardcode secrets
-            _baseUrl = (_cfg != null && !string.IsNullOrEmpty(_cfg.relayBaseUrl))
-                ? _cfg.relayBaseUrl
-                : "http://localhost:8000";  // Fallback only if SmartexConfig missing
+            
+            // URL must come from SmartexConfig (never hardcoded)
+            if (_cfg != null && !string.IsNullOrEmpty(_cfg.relayBaseUrl))
+            {
+                _baseUrl = _cfg.relayBaseUrl;
+            }
+            else
+            {
+                Debug.LogWarning("[MaintenanceService] SmartexConfig.relayBaseUrl not set. API calls will fail.");
+                _baseUrl = string.Empty;
+            }
         }
 
         /// <summary>
