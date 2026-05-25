@@ -24,18 +24,36 @@ namespace Smartex.AR.Maintenance
         [SerializeField] private float _bannerYOffset = 0.3f;  // above the machine
 
         private IMaintenanceService _maintenanceService;
+        private IMachineRecognizer _recognizer;
         private Dictionary<string, GameObject> _activeBanners = new();
         private Dictionary<string, List<GameObject>> _stepCallouts = new();
 
         void Start()
         {
+            // Find the maintenance service (could be MaintenanceService or MockMaintenanceService)
             _maintenanceService = FindFirstObjectByType<IMaintenanceService>();
             if (_maintenanceService == null)
             {
-                Debug.LogError("[MaintenanceUI] No IMaintenanceService found. Disabling.");
-                enabled = false;
-                return;
+                Debug.LogWarning("[MaintenanceUI] No IMaintenanceService found. Some features will be disabled.");
             }
+
+            // Get recognizer from service registry
+            _recognizer = ARServices.Get<IMachineRecognizer>();
+            if (_recognizer != null)
+            {
+                Debug.Log("[MaintenanceUI] Connected to machine recognizer");
+            }
+        }
+
+        void OnDestroy()
+        {
+            // Clean up all banners and callouts when controller is destroyed
+            foreach (var banner in _activeBanners.Values)
+                if (banner != null) Destroy(banner);
+            
+            foreach (var callouts in _stepCallouts.Values)
+                foreach (var callout in callouts)
+                    if (callout != null) Destroy(callout);
         }
 
         /// <summary>

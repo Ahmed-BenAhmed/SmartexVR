@@ -23,17 +23,19 @@ namespace Smartex.AR.Maintenance
     public class MaintenanceService : MonoBehaviour, IMaintenanceService
     {
         [Header("Backend Configuration")]
-        [SerializeField] private string _baseUrl = "http://localhost:8000";  // Override in inspector or ARConfig
         [SerializeField] private int _timeoutSeconds = 8;
 
         private SmartexConfig _cfg;
+        private string _baseUrl;
 
         void Awake()
         {
             ARServices.Register((IMaintenanceService)this);
             _cfg = SmartexConfig.Instance;
-            if (_cfg != null && !string.IsNullOrEmpty(_cfg.relayBaseUrl))
-                _baseUrl = _cfg.relayBaseUrl;
+            // Always use SmartexConfig for URL — never hardcode secrets
+            _baseUrl = (_cfg != null && !string.IsNullOrEmpty(_cfg.relayBaseUrl))
+                ? _cfg.relayBaseUrl
+                : "http://localhost:8000";  // Fallback only if SmartexConfig missing
         }
 
         /// <summary>
