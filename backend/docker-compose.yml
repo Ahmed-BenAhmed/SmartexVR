@@ -1,0 +1,15 @@
+services:
+  smartexvr-backend:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      SMARTEX_DB_PATH: /data/smartex_backend.sqlite3
+    volumes:
+      - smartexvr-backend-data:/data
+
+volumes:
+  smartexvr-backend-data:

@@ -6,7 +6,7 @@ using UnityEngine;
 namespace Smartex.AR.Contracts.Mocks
 {
     /// <summary>
-    /// Emits a fake annotation + a fake IEIA message ~3 s after StartSession.
+    /// Emits a fake annotation + a fake AI-assist message ~3 s after StartSession.
     /// Lets Module E's UI be built without WebRTC / backend.
     /// </summary>
     public class MockRemoteAssistService : MonoBehaviour, IRemoteAssistService
@@ -46,7 +46,7 @@ namespace Smartex.AR.Contracts.Mocks
             });
 
             yield return new WaitForSeconds(4f);
-            OnExpertMessage?.Invoke("IEIA: recommend scheduling cleaning within 24 h (MAD 180 saved).");
+            OnExpertMessage?.Invoke("AI: recommend scheduling cleaning within 24 h (MAD 180 saved).");
         }
     }
 }

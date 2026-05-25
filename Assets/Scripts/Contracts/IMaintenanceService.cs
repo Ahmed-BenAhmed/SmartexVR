@@ -5,7 +5,7 @@ namespace Smartex.AR.Contracts
 {
     /// <summary>
     /// Module D owns this.
-    /// Production implementation hits the IEIA FastAPI backend
+    /// Production implementation hits the SmartexVR FastAPI backend
     /// (/maintenance/procedures, /maintenance/logs).
     /// Dev/editor uses MockMaintenanceService returning canned procedures.
     /// </summary>

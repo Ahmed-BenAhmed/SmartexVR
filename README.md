@@ -1,7 +1,7 @@
 # SmartexVR + AR
 **Industrial IoT Digital Twin & Augmented Reality — Moroccan Textile Factory**
 
-Unity 6 · AR Foundation 6 · InfluxDB · ESP32 · 7-member team
+Unity 6 · Vuforia target recognition · InfluxDB · ESP32 · FastAPI backend · 7-member team
 
 ---
 
@@ -16,14 +16,16 @@ This Unity project visualises that data in two ways:
 | **VR Digital Twin** | Walk through a 3D replica of the factory, see each machine's health in real time | PC / VR headset |
 | **AR Overlay** *(your work)* | Point your phone at a real loom → see its live sensor data floating above it | Android / iOS |
 
-The two modes share **exactly the same data pipeline** (`DataManager` → `OnSnapshotUpdated`). You do not touch the backend or the networking code — you only build what the user sees.
+The two modes share **exactly the same data pipeline** (`DataManager` → `OnSnapshotUpdated`). AR module work should consume the backend contracts instead of calling InfluxDB or AI services directly.
+
+Backend note: `SmartexVR/backend/` now provides the `/snapshot` relay plus maintenance, training, remote assist, anomaly, and AI-assist APIs. Recognition target: **Vuforia**. Some older AR Foundation scaffolding remains in the repo and should be replaced behind the stable `IMachineRecognizer`/`RecognizedMachine.AnchorTransform` contract during the Unity pass.
 
 ---
 
 ## Current State — What Is Already Done
 
 ```
-✅ DataManager        polls InfluxDB every 5 s, fires OnSnapshotUpdated to all subscribers
+✅ DataManager        polls backend `/snapshot` first, then falls back to InfluxDB direct
 ✅ MachineController  receives snapshot, updates 3D body colour + health ring + energy bar
 ✅ HealthAura         pulsing disc on the floor — green (healthy) → red (critical)
 ✅ EnergyBar          vertical pole showing power consumption in real time
@@ -31,7 +33,8 @@ The two modes share **exactly the same data pipeline** (`DataManager` → `OnSna
 ✅ FactoryBuilder     procedural 3D factory scene with 8 auto-scaled FBX looms
 ✅ AR scaffold        7 stub scripts, one per module, with TODOs and wiring comments
 ✅ Assembly defs      each module compiles independently — no accidental cross-deps
-✅ AR packages        ARFoundation 6.0.3 + ARCore + ARKit already in manifest.json
+✅ Backend            FastAPI service in backend/ with mock telemetry, analytics, sessions, and AI assist
+⚠️ Vuforia wiring     Target-recognition Unity setup still needs a Unity machine
 ```
 
 **You are building the AR layer.** The data is already flowing. Your job is to make it visible on a phone.
@@ -278,14 +281,14 @@ This is the centrepiece the factory manager sees. The maintenance team sees Modu
 ### Member 4 — AR Maintenance Workflow
 **File:** `Assets/Scripts/AR/Maintenance/ARMaintenanceGuide.cs`
 **Assembly:** `Smartex.AR.Maintenance`
-**Also needs:** Backend endpoints in `smartex-agent-v2/backend/main.py`
+**Also needs:** Backend endpoints in `SmartexVR/backend/app/main.py`
 
 **What you build:**
 When a technician scans a machine with `health_score < 0.4` (critical), your code fetches a step-by-step repair procedure and shows numbered AR callouts pointing at the parts to inspect. Each confirmed step logs to the backend.
 
 **What to implement:**
 
-1. **Backend first** (add to `smartex-agent-v2/backend/main.py`):
+1. **Backend first** (`SmartexVR/backend/app/main.py`):
 ```python
 @app.get("/maintenance/procedures/{device_id}")
 async def get_procedure(device_id: str):
@@ -321,18 +324,18 @@ void ShowStep(int index)
 **Concepts to understand:**
 - **Coroutines (`IEnumerator` / `yield return`)** — already used in `FetchProcedure()`. A coroutine is a function that can pause mid-execution (`yield return req.SendWebRequest()`) and resume when the web request completes without freezing the app.
 - **UnityWebRequest** — Unity's HTTP client. The pattern `yield return req.SendWebRequest()` waits for the response, then `req.result` tells you if it succeeded.
-- **World-space anchor offsets** — `step.anchorOffset` is a `Vector3` relative to the QR code's world position. `(0.1, 0.5, 0.0)` means "10cm to the right, 50cm up, same depth as the QR".
+- **Target-local anchor offsets** — `step.anchorOffset` is a `Vector3` relative to the recognized machine target. `(0.1, 0.5, 0.0)` means "10cm to the right, 50cm up, same depth as the target".
 - **health_score < 0.4** — means the machine is consuming > 840W (see `MachineData.cs` line 32). This is the trigger threshold; you can adjust it in `ARMaintenanceGuide.healthThreshold`.
 
 **How it connects:**
-`ARMaintenanceGuide` activates only for damaged machines. The completed maintenance log feeds back to the IEIA AI agent (`smartex-agent-v2`) which tracks repair history and adjusts its anomaly predictions. Your POST to `/maintenance/logs` closes the loop between the AR app and the AI.
+`ARMaintenanceGuide` activates only for damaged machines. The completed maintenance log feeds back to the SmartexVR backend, which tracks repair history and exposes it to deterministic analytics plus AI assistance. Your POST to `/maintenance/logs` closes the loop between the AR app and the AI.
 
 ---
 
 ### Member 5 — Remote Expert Assist
 **File:** `Assets/Scripts/AR/RemoteAssist/ARRemoteSession.cs`
 **Assembly:** `Smartex.AR.RemoteAssist`
-**Also needs:** Backend WebSocket endpoint + WebRTC relay
+**Also needs:** Backend WebSocket endpoint + WebRTC signaling
 
 **What you build:**
 A technician in the factory can call a remote expert who watches the AR camera feed from a browser. The expert draws annotations (circles, arrows, text) that appear floating in the technician's AR view in real time.
@@ -344,7 +347,7 @@ A technician in the factory can call a remote expert who watches the AR camera f
 "com.unity.webrtc": "3.0.0-pre.7"
 ```
 
-2. **Backend WebSocket** (add to `smartex-agent-v2/backend/main.py`):
+2. **Backend WebSocket** (`SmartexVR/backend/app/main.py`):
 ```python
 from fastapi import WebSocket
 
@@ -371,18 +374,18 @@ async def ar_session_ws(websocket: WebSocket, session_id: str):
 
 4. Annotation message format (already defined in the stub):
 ```json
-{ "type": "annotation", "world_pos": {"x":1.2,"y":0.5,"z":0.3},
+{ "type": "annotation", "local_pos": {"x":0.12,"y":0.18,"z":0.0},
   "color": "#FF0000", "text": "Check here", "author": "expert" }
 ```
 
 **Concepts to understand:**
 - **WebRTC** — peer-to-peer video streaming protocol. `com.unity.webrtc` lets you stream the AR camera as a video track to a browser.
 - **WebSocket** — a persistent two-way connection (unlike HTTP which is request/response). Used here for the annotation channel (low-latency, bidirectional).
-- **World-space annotation** — `world_pos` in the JSON is a Unity world-space coordinate. The expert's browser must send coordinates in the same coordinate system. You'll need to establish a shared origin (e.g., the first QR anchor = origin).
-- **IEIA agent recommendation** — `ShowAgentRecommendation(string text)` is called from outside with the AI agent's suggestion text. Wire it to a `TextMeshProUGUI` floating panel.
+- **Target-local annotation** — `local_pos` in the JSON is a coordinate relative to the recognized machine target. Consumers should spawn the marker as a child of the machine anchor so it stays tracked.
+- **AI recommendation** — `ShowAgentRecommendation(string text)` is called from outside with the backend AI-assist suggestion text. Wire it to a `TextMeshProUGUI` floating panel.
 
 **How it connects:**
-This module is triggered on-demand when a technician presses "Call Expert". The session ID is shared with the expert via a link. The IEIA backend (`smartex-agent-v2`) can also push its anomaly analysis text through the same channel via `ShowAgentRecommendation`.
+This module is triggered on-demand when a technician presses "Call Expert". The session ID is shared with the expert via a link. The SmartexVR backend can also push anomaly analysis text through the same channel via `ShowAgentRecommendation`.
 
 ---
 
@@ -396,7 +399,7 @@ A new operator scans any loom → AR labels name every component. Then a quiz st
 
 **What to implement:**
 
-1. **Backend content** (add to `smartex-agent-v2/backend/main.py`):
+1. **Backend content** (`SmartexVR/backend/app/main.py`):
 ```python
 @app.get("/training/modules/{device_type}")
 async def get_module(device_type: str):
@@ -436,7 +439,7 @@ public AppLanguage language = AppLanguage.French; // default: French (Morocco)
 - **Pass/Fail threshold** — a score ≥ 70% means the operator is certified on this machine. The backend stores this per `user_id` (use the device's unique ID for now).
 
 **How it connects:**
-Training data feeds the backend's user progress dashboard. Factory managers can see which operators are certified on which looms. The IEIA agent (`smartex-agent-v2`) uses operator certification data in its shift scheduling recommendations.
+Training data feeds the backend's user progress records. Factory managers can see which operators are certified on which looms, and AI assistance can use certification context when it is provided by the backend.
 
 ---
 

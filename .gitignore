@@ -62,6 +62,14 @@ crashlytics-build.properties
 # VS Code
 .vscode/
 
+# Python backend
+backend/.venv/
+backend/.pytest_cache/
+backend/**/__pycache__/
+backend/data/*.db
+backend/data/*.sqlite
+backend/data/*.sqlite3
+
 # Mac
 .DS_Store
 .DS_Store?
