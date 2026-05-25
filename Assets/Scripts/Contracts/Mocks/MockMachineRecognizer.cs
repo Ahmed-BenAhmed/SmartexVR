@@ -28,10 +28,11 @@ namespace Smartex.AR.Contracts.Mocks
         bool   _scanning;
         string _lastEmitted;
 
-        void Awake()
-        {
-            ARServices.Register((IMachineRecognizer)this);
-        }
+       void Awake()
+{
+    ARServices.Register((IMachineRecognizer)this);
+    StartScanning();
+}
 
         void Update()
         {

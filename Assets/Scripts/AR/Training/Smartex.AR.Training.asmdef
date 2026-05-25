@@ -3,13 +3,7 @@
     "rootNamespace": "Smartex.AR.Training",
     "references": [
         "Smartex.Core",
-        "Smartex.Game",
-        "Smartex.AR.Core",
-        "Smartex.AR.Recognition",
-        "Smartex.AR.Overlay",
-        "Unity.XR.ARFoundation",
-        "Unity.XR.ARSubsystems",
-        "Unity.XR.CoreUtils",
+        "Smartex.AR.Contracts",
         "Unity.TextMeshPro"
     ],
     "includePlatforms": [],

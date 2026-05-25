@@ -1,0 +1,39 @@
+{
+  "device_type": "spinner",
+  "locale": "fr",
+  "hotspots": [
+    {
+      "component_id": "spindle",
+      "display_name": "Broche",
+      "local_x": 0.05,
+      "local_y": 0.20,
+      "local_z": 0.0
+    },
+    {
+      "component_id": "bobbin",
+      "display_name": "Bobine",
+      "local_x": 0.12,
+      "local_y": 0.05,
+      "local_z": 0.0
+    },
+    {
+      "component_id": "tension_ring",
+      "display_name": "Anneau de tension",
+      "local_x": 0.18,
+      "local_y": -0.05,
+      "local_z": 0.0
+    }
+  ],
+  "questions": [
+    {
+      "question_id": "q1",
+      "prompt": "Touchez la broche",
+      "correct_hotspot_id": "spindle"
+    },
+    {
+      "question_id": "q2",
+      "prompt": "Touchez la bobine",
+      "correct_hotspot_id": "bobbin"
+    }
+  ]
+}

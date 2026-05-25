@@ -1,0 +1,39 @@
+{
+  "device_type": "dyer",
+  "locale": "en",
+  "hotspots": [
+    {
+      "component_id": "temp_sensor",
+      "display_name": "Temperature Sensor",
+      "local_x": 0.05,
+      "local_y": 0.20,
+      "local_z": 0.0
+    },
+    {
+      "component_id": "pump",
+      "display_name": "Pump",
+      "local_x": 0.12,
+      "local_y": 0.05,
+      "local_z": 0.0
+    },
+    {
+      "component_id": "valve",
+      "display_name": "Valve",
+      "local_x": 0.18,
+      "local_y": -0.05,
+      "local_z": 0.0
+    }
+  ],
+  "questions": [
+    {
+      "question_id": "q1",
+      "prompt": "Tap the temperature sensor",
+      "correct_hotspot_id": "temp_sensor"
+    },
+    {
+      "question_id": "q2",
+      "prompt": "Tap the pump",
+      "correct_hotspot_id": "pump"
+    }
+  ]
+}
