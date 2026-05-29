@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.XR;
 
 namespace Smartex.CameraControl
 {
@@ -65,6 +66,11 @@ namespace Smartex.CameraControl
 
         void Update()
         {
+            // When running on a VR headset, the head pose drives the camera via
+            // TrackedPoseDriver. Skip every desktop-orbit / fly / top-down code path
+            // so we do not stomp the head transform each frame.
+            if (XRSettings.isDeviceActive) return;
+
             HandleHotkeys();
 
             switch (_mode)

@@ -70,3 +70,8 @@ crashlytics-build.properties
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Android build temp
+.utmp/
+Packages/packages-lock.json.*
+SmartexVR_BurstDebugInformation_DoNotShip/

@@ -6,7 +6,10 @@
         "Smartex.Game",
         "Unity.TextMeshPro",
         "Unity.InputSystem",
-        "Unity.EditorCoroutines.Editor"
+        "Unity.EditorCoroutines.Editor",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Universal.Editor",
+        "Unity.RenderPipelines.Core.Runtime"
     ],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],
