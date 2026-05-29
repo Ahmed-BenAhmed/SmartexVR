@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QCARConfig>
+  <Tracking>
+    <ImageTarget name="machine_ESP32_TEX_008" size="0.100000 0.100000" />
+    <ImageTarget name="machine_ESP32_TEX_007" size="0.100000 0.100000" />
+    <ImageTarget name="machine_ESP32_TEX_006" size="0.100000 0.100000" />
+    <ImageTarget name="machine_ESP32_TEX_005" size="0.100000 0.100000" />
+    <ImageTarget name="machine_ESP32_TEX_004" size="0.100000 0.100000" />
+    <ImageTarget name="machine_ESP32_TEX_003" size="0.100000 0.100000" />
+    <ImageTarget name="machine_ESP32_TEX_002" size="0.100000 0.100000" />
+    <ImageTarget name="machine_ESP32_TEX_001" size="0.100000 0.100000" />
+  </Tracking>
+</QCARConfig>

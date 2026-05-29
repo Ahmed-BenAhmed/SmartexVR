@@ -23,5 +23,6 @@ MonoBehaviour:
   trackingMode: target
   trainingBackendUrl: https://api.smartex.ahmedbenahmed.com
   defaultLocale: en
+  showTrackingDebugHud: 1
   maxConcurrentPanels: 8
   disableMachineShadowsOnMobile: 1

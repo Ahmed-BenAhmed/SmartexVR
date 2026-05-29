@@ -37,6 +37,11 @@ namespace Smartex.AR.Recognition
         /// <summary>Fired when a tracked QR is lost (machine moved out of view).</summary>
         public static event Action<string>       OnMachineLost;
 
+        // Allows other recognizers (e.g., Vuforia Image Targets) to reuse
+        // Module B's event contract without reflection hacks.
+        public static void EmitRecognised(string deviceId, Pose pose) => OnMachineRecognised?.Invoke(deviceId, pose);
+        public static void EmitLost(string deviceId) => OnMachineLost?.Invoke(deviceId);
+
         private ARTrackedImageManager _imageManager;
 
         void Awake()  => _imageManager = GetComponent<ARTrackedImageManager>();
@@ -67,7 +72,7 @@ namespace Smartex.AR.Recognition
                 Debug.LogWarning($"[QRTracker] Recognised '{deviceId}' but DataManager has no data for it.");
 
             if (added)
-                OnMachineRecognised?.Invoke(deviceId, pose);
+                EmitRecognised(deviceId, pose);
         }
     }
 }
