@@ -1,0 +1,39 @@
+{
+  "device_type": "loom",
+  "locale": "en",
+  "hotspots": [
+    {
+      "component_id": "tension_sensor",
+      "display_name": "Tension Sensor",
+      "local_x": 0.05,
+      "local_y": 0.20,
+      "local_z": 0.0
+    },
+    {
+      "component_id": "heddle",
+      "display_name": "Heddle",
+      "local_x": 0.12,
+      "local_y": 0.05,
+      "local_z": 0.0
+    },
+    {
+      "component_id": "shuttle",
+      "display_name": "Shuttle",
+      "local_x": 0.18,
+      "local_y": -0.05,
+      "local_z": 0.0
+    }
+  ],
+  "questions": [
+    {
+      "question_id": "q1",
+      "prompt": "Tap the tension sensor",
+      "correct_hotspot_id": "tension_sensor"
+    },
+    {
+      "question_id": "q2",
+      "prompt": "Tap the shuttle",
+      "correct_hotspot_id": "shuttle"
+    }
+  ]
+}
