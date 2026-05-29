@@ -2,9 +2,9 @@
 // Owner   : assign to member 4
 // Purpose : When a scanned machine has health_score < 0.4, show a step-by-step
 //           AR repair guide with numbered callouts pointing at machine parts.
-//           Each completed step is logged to the IEIA backend.
+//           Each completed step is logged to the SmartexVR backend.
 //
-// Backend endpoints to implement in smartex-agent-v2/backend/main.py:
+// Backend endpoints in SmartexVR/backend/app/main.py:
 //   GET  /maintenance/procedures/{device_id}  → MaintenanceProcedure JSON
 //   POST /maintenance/logs                    → record completed task
 //   GET  /maintenance/logs/{device_id}        → history

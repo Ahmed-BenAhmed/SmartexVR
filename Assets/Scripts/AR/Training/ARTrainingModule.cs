@@ -3,7 +3,7 @@
 // Purpose : New operator scans machine → AR overlays component names.
 //           Interactive quiz: "Tap the tension sensor" → highlight correct part.
 //           Multilingual: Arabic / French / English.
-//           Scores stored in IEIA backend.
+//           Scores stored in the SmartexVR backend.
 //
 // Backend endpoints to add:
 //   GET  /training/modules/{device_type}     → TrainingModule JSON

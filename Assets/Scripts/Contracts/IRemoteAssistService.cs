@@ -13,7 +13,7 @@ namespace Smartex.AR.Contracts
         Task<Session> StartSession(string deviceId);
 
         event Action<Annotation> OnAnnotationReceived;  // target-local position
-        event Action<string>     OnExpertMessage;       // chat / IEIA push
+        event Action<string>     OnExpertMessage;       // chat / AI assist push
 
         Task EndSession();
     }

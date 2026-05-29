@@ -2,20 +2,20 @@
 // Owner   : assign to member 5
 // Purpose : Technician streams AR camera via WebRTC.
 //           Remote expert draws annotations → appear in technician AR view.
-//           IEIA agent recommendation shown as floating text.
+//           SmartexVR AI recommendation shown as floating text.
 //
 // Architecture:
-//   Technician device  ──WebRTC──►  Relay server  ──WebRTC──►  Expert browser
+//   Technician device  ──WebRTC──►  SmartexVR backend  ──WebRTC──►  Expert browser
 //                      ◄──WS annotations──          ◄──WS annotations──
 //
-// Backend endpoints to add to smartex-agent-v2/backend/main.py:
+// Backend endpoints in SmartexVR/backend/app/main.py:
 //   POST /sessions                          → create session, returns session_id
 //   WebSocket /ws/ar-session/{session_id}   → bidirectional annotation stream
 //   GET  /sessions/{id}/recording           → playback URL
 //
 // Annotation message schema (JSON over WebSocket):
 //   { "type": "annotation",
-//     "world_pos": {"x":1.2,"y":0.5,"z":0.3},
+//     "local_pos": {"x":0.12,"y":0.18,"z":0.0},
 //     "color":     "#FF0000",
 //     "text":      "Check belt tension here",
 //     "author":    "remote_expert" }
@@ -33,7 +33,7 @@ namespace Smartex.AR.RemoteAssist
     public class AnnotationMessage
     {
         public string type;
-        public Vector3 world_pos;
+        public Vector3 local_pos;
         public string color;
         public string text;
         public string author;
@@ -52,7 +52,7 @@ namespace Smartex.AR.RemoteAssist
         [Header("Annotation prefab")]
         public GameObject annotationPrefab;   // world-space label + arrow
 
-        [Header("IEIA Agent Panel")]
+        [Header("AI Assist Panel")]
         public GameObject agentRecommendationPanel;
         public TMPro.TextMeshProUGUI agentRecommendationText;
 
@@ -84,7 +84,9 @@ namespace Smartex.AR.RemoteAssist
         void SpawnAnnotation(AnnotationMessage msg)
         {
             if (annotationPrefab == null) return;
-            var go = Instantiate(annotationPrefab, msg.world_pos, Quaternion.identity);
+            // local_pos is target-local. A full implementation should parent the
+            // marker under the recognized machine anchor before applying this offset.
+            var go = Instantiate(annotationPrefab, msg.local_pos, Quaternion.identity);
             var label = go.GetComponentInChildren<TMPro.TextMeshPro>();
             if (label != null) label.text = $"{msg.author}: {msg.text}";
             // TODO Member 5: parse msg.color string → set label/arrow color
