@@ -1,347 +1,398 @@
 # SmartexVR + AR
-**Jumeau Numérique Industriel & Réalité Augmentée — Usine textile marocaine**
 
-> Industrial IoT Digital Twin & Augmented Reality for a Moroccan textile factory.
-> Unity 6 · Vuforia · InfluxDB · Apache NiFi · ESP32 · FastAPI · Mistral AI · 7-member team.
+**Jumeau numérique industriel et réalité augmentée pour une usine textile marocaine**
 
-**Groupe 1** — Filière *Ingénierie en Systèmes d'Information et Big Data (ISIBD)*, ENSA Berrechid — Université Hassan 1er.
-Module : *Ingénierie et maquette numérique – projet AR*. Encadré par **Pr. Hrimech Hamid** & **Pr. Oumeima**.
+Unity 6 · Vuforia · InfluxDB · Apache NiFi · ESP32 · FastAPI · Mistral AI · Git LFS
+
+**Groupe 1** — Filière *Ingénierie en Systèmes d'Information et Big Data (ISIBD)*, ENSA Berrechid, Université Hassan 1er.
+
+Module : *Ingénierie et maquette numérique - projet AR*.
+
+Encadrement : **Pr. Hrimech Hamid** et **Pr. Oumeima**.
 
 ---
 
-## Table of contents
+## Sommaire
 
-1. [Overview](#1-overview)
-2. [Documentation & reports](#2-documentation--reports)
-3. [Demo video](#3-demo-video)
+1. [Vue d'ensemble](#1-vue-densemble)
+2. [Documentation et livrables](#2-documentation-et-livrables)
+3. [Démonstration vidéo](#3-demonstration-video)
 4. [Architecture](#4-architecture)
-5. [Repository structure](#5-repository-structure)
-6. [Prerequisites](#6-prerequisites)
-7. [Backend — run & configure](#7-backend--run--configure)
-8. [Unity client — open, scenes & build](#8-unity-client--open-scenes--build)
-9. [Verifying the application works](#9-verifying-the-application-works)
-10. [Team & module assignments](#10-team--module-assignments)
-11. [Git & LFS workflow](#11-git--lfs-workflow)
-12. [Data conventions](#12-data-conventions)
+5. [Structure du dépôt](#5-structure-du-depot)
+6. [Prérequis](#6-prerequis)
+7. [Backend FastAPI](#7-backend-fastapi)
+8. [Client Unity AR/VR](#8-client-unity-arvr)
+9. [Vérification](#9-verification)
+10. [Équipe et modules](#10-equipe-et-modules)
+11. [Workflow Git et LFS](#11-workflow-git-et-lfs)
+12. [Conventions techniques](#12-conventions-techniques)
 
 ---
 
-## 1. Overview
+<a id="1-vue-densemble"></a>
 
-Eight Jacquard looms in a Moroccan textile factory each carry an **ESP32** that measures power
-consumption, vibration, dye/fabric temperature and thread tension every few seconds. The telemetry is
-ingested with **Apache NiFi** into an **InfluxDB** time-series database, exposed through a **FastAPI**
-backend (relay + analytics + AI assistance), and visualised in Unity two ways:
+## 1. Vue d'ensemble
 
-| Mode | What you see | Platform |
-|------|--------------|----------|
-| **VR / Desktop digital twin** | A 3D replica of the factory; each machine's health in real time | PC / VR headset |
-| **AR overlay** | Point a phone at a real loom → live sensor data floats above it | Android / iOS (Vuforia) |
+SmartexVR modélise une ligne textile composée de huit métiers Jacquard. Chaque machine est équipée d'un **ESP32** qui remonte des mesures de consommation électrique, vibration, température et tension du tissu. Les données sont ingérées par **Apache NiFi**, stockées dans **InfluxDB**, puis exposées à Unity via un backend **FastAPI**.
 
-Both modes consume **the same backend contracts** (`DataManager → /snapshot`), so the data shown is always
-consistent. The project also targets **CBAM** (Carbon Border Adjustment Mechanism) traceability: per-machine
-CO₂ and carbon-cost estimates are computed by the backend.
+Le projet propose deux expériences complémentaires :
 
-Key capabilities: real-time data overlay, guided AR maintenance, multilingual (ar/fr/en) operator training,
-remote-expert assistance (backend relay), and a **grounded AI maintenance assistant** (Mistral) that never
-invents sensor readings and degrades gracefully to deterministic guidance.
+| Mode | Description | Plateforme |
+|------|-------------|------------|
+| **Jumeau numérique VR / Desktop** | Usine 3D avec 8 machines, état de santé, aura, barre d'énergie et panneau de détail | PC / casque VR |
+| **Overlay AR** | Reconnaissance d'une machine réelle avec Vuforia, puis affichage des données temps réel au-dessus de la machine | Android / iOS |
 
----
+Les deux modes utilisent le même contrat de données : `DataManager` interroge d'abord `/snapshot`, puis peut basculer vers InfluxDB si le relais backend n'est pas disponible. Les modules AR ne doivent pas appeler InfluxDB ou Mistral directement : ils consomment les contrats partagés (`ARServices`, `IMachineRecognizer`, `RecognizedMachine`, etc.).
 
-## 2. Documentation & reports
+Fonctionnalités principales :
 
-The full project documentation is delivered as French academic reports under [`Docs/reports/`](Docs/reports):
-
-| Report | File |
-|--------|------|
-| **Final report + all member annexes** (complete submission, 147 p) | [`Docs/reports/Rapport_Final_SmartexVR_avec_Annexes.pdf`](Docs/reports/Rapport_Final_SmartexVR_avec_Annexes.pdf) |
-| Final project report (synthesis, standalone) | [`Docs/reports/Rapport_Final_SmartexVR.pdf`](Docs/reports/Rapport_Final_SmartexVR.pdf) |
-| Individual report — Chef de projet / Backend / QA (Ahmed Ben Ahmed) | [`Docs/reports/Rapport_Individuel_AhmedBenAhmed_ChefDeProjet.pdf`](Docs/reports/Rapport_Individuel_AhmedBenAhmed_ChefDeProjet.pdf) |
-| Module report — Assistant IA (Aboulaakoul Elwalid) | [`Docs/reports/Rapport_Module_AssistantIA_Elwalid.pdf`](Docs/reports/Rapport_Module_AssistantIA_Elwalid.pdf) |
-
-Individual member module reports (also embedded as annexes in the complete submission):
-
-| Module report | Member | File |
-|---------------|--------|------|
-| Module A — Cœur AR (Vuforia / Android) | Zahra JABER | [`Docs/reports/_annexes/annexe_A_ModuleA_Zahra.pdf`](Docs/reports/_annexes/annexe_A_ModuleA_Zahra.pdf) |
-| Module B — Reconnaissance de machine | Wissal CHEIKH | [`Docs/reports/_annexes/annexe_B_ModuleB_Wissal.pdf`](Docs/reports/_annexes/annexe_B_ModuleB_Wissal.pdf) |
-| Module C — Interface / Overlay de données AR | Radwa Tourabi | [`Docs/reports/_annexes/annexe_C_ModuleC_Radwa.pdf`](Docs/reports/_annexes/annexe_C_ModuleC_Radwa.pdf) |
-| Module D — Flux de maintenance AR | Maryam Mouaki | [`Docs/reports/_annexes/annexe_D_ModuleD_Maryam.pdf`](Docs/reports/_annexes/annexe_D_ModuleD_Maryam.pdf) |
-| Module F — Formation & onboarding | Hiba Marir | [`Docs/reports/_annexes/annexe_F_ModuleF_Hiba.pdf`](Docs/reports/_annexes/annexe_F_ModuleF_Hiba.pdf) |
-
-The annexed final report embeds every member's individual report (Modules A, B, C, D, F, Assistant IA, and
-the project-lead report). Report sources (docx-js generators) and the member PDFs live in
-`Docs/reports/_build/` and `Docs/reports/_annexes/`.
-
-Additional design docs: [`Docs/CLAUDE_UNITY_CONNECTION_HANDOFF.md`](Docs/CLAUDE_UNITY_CONNECTION_HANDOFF.md),
-[`Docs/performance-baseline.md`](Docs/performance-baseline.md), [`Docs/deployment.md`](Docs/deployment.md),
-[`backend/README.md`](backend/README.md).
+- affichage temps réel des mesures machine ;
+- estimation CO2 et contribution CBAM par machine ;
+- reconnaissance Vuforia des cibles `ESP32_TEX_001` à `ESP32_TEX_008` ;
+- guide de maintenance AR ;
+- formation opérateur multilingue ;
+- assistance distante via backend ;
+- assistant IA de maintenance avec Mistral et fallback déterministe.
 
 ---
 
-## 3. Demo video
+<a id="2-documentation-et-livrables"></a>
 
-A walkthrough/demo video of the working application:
+## 2. Documentation et livrables
 
-▶️ **[Watch the demo on Google Drive](https://drive.google.com/file/d/1v2tkMdKLTbN0WfvOwtlpBEgO-JCsPM08/view?usp=sharing)**
+Les rapports académiques sont disponibles dans [`Docs/reports/`](Docs/reports).
 
-It is also included in the repository (tracked via Git LFS, see [§11](#11-git--lfs-workflow)):
-🎥 **[`Docs/media/SmartexVR_demo.mkv`](Docs/media/SmartexVR_demo.mkv)** — download to play locally (GitHub does
-not stream `.mkv` inline).
+| Livrable | Fichier |
+|----------|---------|
+| Rapport final avec toutes les annexes | [`Docs/reports/Rapport_Final_SmartexVR_avec_Annexes.pdf`](Docs/reports/Rapport_Final_SmartexVR_avec_Annexes.pdf) |
+| Rapport final de synthèse | [`Docs/reports/Rapport_Final_SmartexVR.pdf`](Docs/reports/Rapport_Final_SmartexVR.pdf) |
+| Rapport individuel - chef de projet / backend / QA | [`Docs/reports/Rapport_Individuel_AhmedBenAhmed_ChefDeProjet.pdf`](Docs/reports/Rapport_Individuel_AhmedBenAhmed_ChefDeProjet.pdf) |
+| Rapport module - assistant IA | [`Docs/reports/Rapport_Module_AssistantIA_Elwalid.pdf`](Docs/reports/Rapport_Module_AssistantIA_Elwalid.pdf) |
+
+Annexes par module :
+
+| Module | Responsable | Annexe |
+|--------|-------------|--------|
+| A - Coeur AR Vuforia / Android | Zahra JABER | [`annexe_A_ModuleA_Zahra.pdf`](Docs/reports/_annexes/annexe_A_ModuleA_Zahra.pdf) |
+| B - Reconnaissance de machine | Wissal CHEIKH | [`annexe_B_ModuleB_Wissal.pdf`](Docs/reports/_annexes/annexe_B_ModuleB_Wissal.pdf) |
+| C - Overlay AR temps réel | Radwa Tourabi | [`annexe_C_ModuleC_Radwa.pdf`](Docs/reports/_annexes/annexe_C_ModuleC_Radwa.pdf) |
+| D - Maintenance AR | Maryam Mouaki | [`annexe_D_ModuleD_Maryam.pdf`](Docs/reports/_annexes/annexe_D_ModuleD_Maryam.pdf) |
+| E - Assistant IA | Aboulaakoul Elwalid | [`annexe_E_AssistantIA_Elwalid.pdf`](Docs/reports/_annexes/annexe_E_AssistantIA_Elwalid.pdf) |
+| F - Formation et onboarding | Hiba Marir | [`annexe_F_ModuleF_Hiba.pdf`](Docs/reports/_annexes/annexe_F_ModuleF_Hiba.pdf) |
+| G - Gestion de projet / intégration | Ahmed Ben Ahmed | [`annexe_G_ChefDeProjet_Ahmed.pdf`](Docs/reports/_annexes/annexe_G_ChefDeProjet_Ahmed.pdf) |
+
+Autres documents utiles :
+
+- [`backend/README.md`](backend/README.md) : commandes backend, variables d'environnement et API ;
+- [`Docs/deployment.md`](Docs/deployment.md) : guide de déploiement Android, iOS et Quest ;
+- [`Docs/performance-baseline.md`](Docs/performance-baseline.md) : baseline performance ;
+- [`Docs/CLAUDE_UNITY_CONNECTION_HANDOFF.md`](Docs/CLAUDE_UNITY_CONNECTION_HANDOFF.md) : notes d'intégration Unity/Vuforia.
 
 ---
+
+<a id="3-demonstration-video"></a>
+
+## 3. Démonstration vidéo
+
+Vidéo de démonstration :
+
+**[Voir la démo sur Google Drive](https://drive.google.com/file/d/1v2tkMdKLTbN0WfvOwtlpBEgO-JCsPM08/view?usp=sharing)**
+
+La vidéo est aussi incluse dans le dépôt via Git LFS :
+
+[`Docs/media/SmartexVR_demo.mkv`](Docs/media/SmartexVR_demo.mkv)
+
+---
+
+<a id="4-architecture"></a>
 
 ## 4. Architecture
 
 <p align="center">
-  <img src="Docs/reports/images/arch_pipeline.png" alt="SmartexVR data pipeline" width="360">
+  <img src="Docs/reports/images/arch_pipeline.png" alt="Pipeline de données SmartexVR" width="360">
   &nbsp;&nbsp;&nbsp;
-  <img src="Docs/reports/images/m_arch_real.png" alt="Architecture technique détaillée SmartTex" width="420">
+  <img src="Docs/reports/images/m_arch_real.png" alt="Architecture technique SmartTex" width="420">
 </p>
 
-*Left: end-to-end data pipeline. Right: detailed technical architecture (sensors, MQTT, k3s cluster, users).*
+Le flux principal est le suivant :
 
-The Unity client **never** talks to InfluxDB or Mistral directly — it consumes the backend's stable
-contracts (`IMachineRecognizer` / `RecognizedMachine`, `/snapshot`, `/assist/query`, …). A Grafana
-dashboard provides web-based supervision of the same InfluxDB data.
+```text
+ESP32 -> MQTT/NiFi -> InfluxDB -> FastAPI -> Unity DataManager -> VR / AR
+```
+
+Le backend sert de couche de protection et d'agrégation :
+
+- `/snapshot` fournit l'état courant de l'usine au format attendu par Unity ;
+- les endpoints maintenance, formation et sessions AR stockent les workflows métier ;
+- `/assist/query` interroge Mistral si une clé est configurée, sinon retourne une réponse déterministe basée sur les mesures et anomalies disponibles ;
+- Unity reste découplé de l'infrastructure data et IA.
 
 ---
 
-## 5. Repository structure
+<a id="5-structure-du-depot"></a>
 
-```
+## 5. Structure du dépôt
+
+```text
 SmartexVR/
 ├── Assets/
 │   ├── Scripts/
-│   │   ├── Core/            DATA LAYER — DataManager, InfluxDBClient, SmartexConfig, Models
-│   │   ├── Machines/        VR visuals — MachineController, HealthAura, EnergyBar
-│   │   ├── UI/              Shared UI — MachineDetailPanel
-│   │   ├── Contracts/       Stable AR service contracts (IMachineRecognizer, DataTypes, ARServices) + Mocks
-│   │   └── AR/              AR modules — Core, Recognition, Overlay/ModuleC, Maintenance, RemoteAssist, Training, QA
-│   ├── Scenes/              SmartexAR*.unity (AR), …
-│   ├── ARTrainingScene.unity
-│   ├── vrscene.unity        VR / desktop digital twin
-│   ├── Resources/           ARConfig, VuforiaConfiguration, training & maintenance JSON
-│   └── StreamingAssets/Vuforia/   SmartexMachines.dat/.xml (target database)
-├── Packages/                Vuforia 11.4.4 (.tgz via LFS), AR Foundation 6.1, manifest/lock
-├── backend/                 FastAPI service (app/, tests/, Dockerfile, docker-compose.yml)
-├── Docs/
-│   ├── reports/             Final report, member reports, annexed PDF (see §2)
-│   └── media/               Demo video (see §3)
+│   │   ├── Core/              DataManager, InfluxDBClient, SmartexConfig, modèles
+│   │   ├── Machines/          Visuels du jumeau numérique
+│   │   ├── UI/                UI partagée
+│   │   ├── Contracts/         Interfaces AR stables + mocks éditeur
+│   │   └── AR/                Modules Core, Recognition, Overlay, Maintenance, RemoteAssist, Training, QA
+│   ├── Scenes/
+│   │   └── SmartexAR.unity    Scène AR principale
+│   ├── ARTrainingScene.unity  Scène de formation opérateur
+│   ├── vrscene.unity          Jumeau numérique VR / desktop
+│   ├── Resources/             ARConfig, VuforiaConfiguration, contenus JSON
+│   └── StreamingAssets/Vuforia/
+│       ├── SmartexMachines.dat
+│       └── SmartexMachines.xml
+├── Packages/                  Manifest Unity + Vuforia 11.4.4 en `.tgz`
+├── ProjectSettings/           Configuration Unity
+├── backend/                   API FastAPI, tests, Dockerfile, compose
+├── Docs/                      Rapports, médias et guides techniques
 └── README.md
 ```
 
 ---
 
-## 6. Prerequisites
+<a id="6-prerequis"></a>
 
-- **Unity** `6000.3.11f1` (exact — install via Unity Hub). URP project.
-- **Git** + **Git LFS** (`git lfs install` once after cloning — required for the Vuforia `.tgz`, FBX, images).
-- **Python ≥ 3.11** and [**uv**](https://docs.astral.sh/uv/) for the backend (or **Docker** + Docker Compose).
-- For AR builds: **Android SDK** (API 24+, ARM64) — bundled with Unity's Android module — or Xcode for iOS.
-- A **Vuforia** license key (free dev key) and, optionally, a **Mistral API key** for live AI answers.
+## 6. Prérequis
+
+- **Unity 6000.3.11f1** exactement, avec le module Android Build Support si vous ciblez Android.
+- **Git LFS** pour récupérer les gros fichiers : Vuforia `.tgz`, vidéos, rapports, images, modèles.
+- **Python 3.11+** avec [`uv`](https://docs.astral.sh/uv/) pour exécuter le backend localement.
+- **Docker** et Docker Compose si vous préférez lancer le backend en conteneur.
+- Une clé **Vuforia** pour les tests AR sur appareil.
+- Une clé **Mistral** uniquement si vous voulez des réponses IA live ; sans clé, le backend reste fonctionnel avec un fallback déterministe.
+
+Installation :
 
 ```bash
 git clone https://github.com/Ahmed-BenAhmed/SmartexVR.git
 cd SmartexVR
-git lfs install && git lfs pull
+git lfs install
+git lfs pull
 ```
 
 ---
 
-## 7. Backend — run & configure
+<a id="7-backend-fastapi"></a>
 
-Location: [`backend/`](backend). FastAPI app at `app.main:app`. Mock telemetry is enabled by default, so the
-backend runs with **no external dependencies** out of the box.
+## 7. Backend FastAPI
 
-### Run locally (uv)
+Le backend se trouve dans [`backend/`](backend). Par défaut, il utilise des données mockées pour les huit machines `ESP32_TEX_001` à `ESP32_TEX_008`, donc aucun InfluxDB réel n'est nécessaire pour lancer une démo locale.
+
+Lancement avec `uv` :
 
 ```bash
 cd backend
 uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
-#  or:  make run
 ```
 
-The API is then at `http://127.0.0.1:8000` (Unity defaults to this in `SmartexConfig.relayBaseUrl`).
-Interactive docs: `http://127.0.0.1:8000/docs`.
-
-### Run with Docker
+Lancement avec Docker :
 
 ```bash
 cd backend
-docker compose up --build          # or: make docker-up
+docker compose up --build
 ```
 
-### Configuration (environment)
+Documentation interactive :
 
-Copy `backend/.env.example` → `backend/.env` only to override defaults. Key variables:
-
-| Variable | Purpose |
-|----------|---------|
-| `SMARTEX_DATA_SOURCE` | `mock` (default, generated telemetry) or `influx` (live InfluxDB) |
-| `INFLUX_URL` / `INFLUX_TOKEN` / `INFLUX_ORG` / `INFLUX_BUCKET` | InfluxDB connection (when `influx`) |
-| `MISTRAL_API_KEY` / `MISTRAL_MODEL` | Live AI answers; **without a key**, `/assist/query` returns deterministic guidance |
-| `SMARTEX_API_TOKEN` | Optional shared-token auth for protected routes |
-
-> 🔐 Never commit secrets (Mistral key, Vuforia license). They are read from the environment only.
-
-### Main endpoints
-
+```text
+http://127.0.0.1:8000/docs
 ```
+
+Variables d'environnement principales :
+
+| Variable | Rôle |
+|----------|------|
+| `SMARTEX_DATA_SOURCE` | `mock` par défaut, ou `influx` pour les données réelles |
+| `INFLUX_URL`, `INFLUX_TOKEN`, `INFLUX_ORG`, `INFLUX_BUCKET` | Connexion InfluxDB |
+| `MISTRAL_API_KEY`, `MISTRAL_MODEL` | Assistant IA live |
+| `SMARTEX_API_TOKEN` | Protection optionnelle des routes backend |
+| `REQUIRE_AUTH_FOR_SNAPSHOT` | Protège aussi `/snapshot` si défini à `true` |
+
+Endpoints principaux :
+
+```text
 GET  /health
-GET  /snapshot                                  # Unity relay contract (FactorySnapshot)
-GET  /machines · /machines/{id}/latest
-GET  /machines/{id}/timeseries?range=24h
-GET  /machines/{id}/anomalies?range=24h         # median/MAD anomaly detection
-GET  /maintenance/procedures/{id} · POST /maintenance/logs
-GET  /training/modules/{type}    · POST /training/assessments
-POST /sessions · WS /ws/ar-session/{id}         # remote-assist relay
-POST /assist/query                              # grounded AI assistant (Mistral → deterministic fallback)
-POST /assist/sessions/{id}/summary · /report
+GET  /snapshot
+GET  /machines
+GET  /machines/{device_id}/latest
+GET  /machines/{device_id}/timeseries?range=24h
+GET  /machines/{device_id}/anomalies?range=24h
+GET  /maintenance/procedures/{device_id}
+POST /maintenance/logs
+GET  /training/modules/{device_type}
+POST /training/assessments
+POST /sessions
+WS   /ws/ar-session/{session_id}
+POST /assist/query
+POST /assist/sessions/{session_id}/summary
+POST /assist/sessions/{session_id}/report
 ```
 
----
-
-## 8. Unity client — open, scenes & build
-
-### Open the project
-
-1. Open **Unity Hub → Add** → select this folder → open with **Unity 6000.3.11f1**.
-2. First import takes a few minutes (packages + Vuforia compile). Ensure `git lfs pull` ran first, or the
-   Vuforia `.tgz` will be an invalid LFS pointer.
-3. Set the Vuforia license key in `Assets/Resources/VuforiaConfiguration.asset` (or via environment) — it is
-   intentionally **not** committed.
-
-### Scenes (committed in the repo)
-
-| Scene | Purpose |
-|-------|---------|
-| `Assets/vrscene.unity` | VR / desktop **digital twin** — 8 looms with health aura + energy bar |
-| `Assets/Scenes/SmartexAR.unity` | **AR scene** — Vuforia recognition + overlay + modules |
-| `Assets/ARTrainingScene.unity` | Operator **training / onboarding** (multilingual) |
-
-These three scenes are tracked and pushed — open them directly after import. (Scratch scenes `scene.unity`
-and `scene1.unity` are early prototypes and can be ignored.)
-
-> Test without hardware: start the backend (§7), open `SmartexAR.unity`, and in the AR rig swap the active
-> recognizer for the **mock recognizer** under `Assets/Scripts/Contracts/Mocks/` (it emits a recognized
-> machine in the Editor). The overlay then spawns and refreshes from `/snapshot` without a phone or printed
-> target.
-
-### Assembling / rebuilding an AR scene from the menu
-
-If you need to (re)build an AR scene from scratch, Vuforia adds its objects under Unity's **GameObject** menu:
-
-1. `GameObject → Vuforia Engine → AR Camera` (replaces the Main Camera; holds the Vuforia behaviour).
-2. `GameObject → Vuforia Engine → Image Target` — set **Type = From Database**, **Database = SmartexMachines**,
-   and **Image Target = machine_ESP32_TEX_00N** (one per loom, names matching the device IDs).
-3. Add an empty `SmartexManager` and attach the recognizer (`VuforiaTargetScanner`) + `DataManager`; it
-   registers itself with `ARServices` and maps each target to a `device_id`.
-4. Parent the overlay / maintenance / training content under each Image Target's transform so it stays
-   anchored, then add the scene to `File → Build Settings → Scenes In Build`.
-5. Set the Vuforia license in `Window → Vuforia Configuration` (or `Assets/Resources/VuforiaConfiguration.asset`).
-
-The target database (`Assets/StreamingAssets/Vuforia/SmartexMachines.dat/.xml`) and target textures are
-already in the repo, so step 2 finds the eight machines without re-importing anything.
-
-### Build to Android (AR)
-
-1. `File → Build Settings → Android → Switch Platform`.
-2. Player Settings → Minimum API **24**, Target Architecture **ARM64**, scripting backend **IL2CPP** for release.
-3. Add `Assets/Scenes/SmartexAR.unity` (and `ARTrainingScene.unity`) to *Scenes In Build*.
-4. Set `SmartexConfig.relayBaseUrl` to a backend reachable from the phone (LAN IP, not `localhost`).
-5. Connect the device (USB debugging) → **Build And Run**.
+Ne commitez jamais les secrets : clé Vuforia, token InfluxDB, clé Mistral ou token API.
 
 ---
 
-## 9. Verifying the application works
+<a id="8-client-unity-arvr"></a>
 
-### Backend tests & smoke
+## 8. Client Unity AR/VR
+
+Ouvrir le projet :
+
+1. Ouvrir Unity Hub.
+2. Ajouter ce dossier comme projet Unity.
+3. Sélectionner **Unity 6000.3.11f1**.
+4. Attendre l'import complet des packages et assets.
+5. Vérifier que `git lfs pull` a bien été exécuté avant l'import.
+
+Scènes importantes :
+
+| Scène | Usage |
+|-------|------|
+| `Assets/vrscene.unity` | Jumeau numérique VR / desktop |
+| `Assets/Scenes/SmartexAR.unity` | Scène AR principale avec Vuforia |
+| `Assets/ARTrainingScene.unity` | Formation et onboarding opérateur |
+
+Les scènes `Assets/scene.unity` et `Assets/scene1.unity` sont des prototypes anciens.
+
+Configuration Vuforia :
+
+1. Ouvrir `Assets/Resources/VuforiaConfiguration.asset`.
+2. Renseigner la licence Vuforia localement.
+3. Vérifier la base de cibles `SmartexMachines` dans `Assets/StreamingAssets/Vuforia/`.
+4. Les cibles doivent correspondre aux identifiants `ESP32_TEX_001` à `ESP32_TEX_008`.
+
+Reconnaissance AR :
+
+- `Assets/Scripts/AR/Recognition/VuforiaTargetToMachineBridge.cs` relie les Image Targets Vuforia au contrat existant `MachineQRTracker`.
+- `Assets/Scripts/Contracts/IMachineRecognizer.cs` et `ARServices.cs` définissent l'interface stable à utiliser par les modules.
+- Les contenus AR doivent être parentés sous `RecognizedMachine.AnchorTransform` ou sous le transform de l'Image Target pour rester correctement ancrés.
+
+Build Android :
+
+1. `File -> Build Settings -> Android -> Switch Platform`.
+2. Minimum API : **24**.
+3. Architecture : **ARM64**.
+4. Backend URL : remplacer `localhost` par l'IP LAN de la machine qui lance FastAPI.
+5. Ajouter `Assets/Scenes/SmartexAR.unity` aux scènes du build.
+6. Connecter le téléphone en USB debugging puis lancer **Build And Run**.
+
+---
+
+<a id="9-verification"></a>
+
+## 9. Vérification
+
+Tests backend :
 
 ```bash
 cd backend
-uv run pytest                 # 16 tests: API + analytics + AI client  → all pass
-make smoke                    # curls /health, /snapshot, /anomalies against a running server
+uv run pytest
 ```
 
-End-to-end sanity against a running server:
+Smoke test API :
+
+```bash
+cd backend
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Dans un autre terminal :
 
 ```bash
 curl http://127.0.0.1:8000/health
 curl http://127.0.0.1:8000/snapshot
 curl "http://127.0.0.1:8000/machines/ESP32_TEX_003/anomalies?range=24h"
-curl -X POST http://127.0.0.1:8000/assist/query -H "Content-Type: application/json" \
+curl -X POST http://127.0.0.1:8000/assist/query \
+  -H "Content-Type: application/json" \
   -d '{"device_id":"ESP32_TEX_003","locale":"fr","question":"Pourquoi cette machine est en alerte ?"}'
 ```
 
-The assist call returns `ai_provider: "mistral"` when a key is set, otherwise `ai_provider: "deterministic"`
-— both are valid, HTTP 200.
+Contrôle Unity :
 
-### Unity compile check (headless)
+- ouvrir `Assets/vrscene.unity`, lancer Play, vérifier que les huit machines changent d'état avec les snapshots ;
+- ouvrir `Assets/Scenes/SmartexAR.unity`, vérifier l'absence d'erreurs C# dans la console ;
+- sur appareil Android, viser une cible Vuforia `ESP32_TEX_00N` et vérifier que l'overlay reste ancré ;
+- vérifier que les appels maintenance, formation et assistant IA passent par le backend, pas directement par InfluxDB ou Mistral.
+
+Compilation Unity en batch, exemple Windows :
 
 ```bash
-# Windows (adjust the path to your Unity install)
 "C:\Program Files\Unity\Hub\Editor\6000.3.11f1\Editor\Unity.exe" ^
   -batchmode -quit -nographics ^
   -projectPath "%CD%" -logFile compile.log -buildTarget Android
-# Success = return code 0 and no "error CS" lines in compile.log
 ```
 
-The integrated project compiles cleanly (0 C# errors) across Vuforia, AR Foundation 6.1 and all `Smartex.*`
-assemblies.
-
-### AR / runtime smoke checklist
-
-- **Twin:** open `vrscene.unity`, Play → 8 looms update colour/health from the backend.
-- **AR (editor):** open `SmartexAR_MockDemo.unity`, Play → overlay spawns above the mock-recognized machine.
-- **AR (device):** point the phone at a printed `ESP32_TEX_00N` target → overlay anchors to the loom and shows
-  live data; `/assist/query` answers render in the recommendation panel.
+Succès attendu : code retour `0` et aucune erreur `CS` dans `compile.log`.
 
 ---
 
-## 10. Team & module assignments
+<a id="10-equipe-et-modules"></a>
 
-**Groupe 1** — 7 members. Encadré par Pr. Hrimech Hamid & Pr. Oumeima.
+## 10. Équipe et modules
 
-| Module | Responsable | Scope |
-|--------|-------------|-------|
-| Backend, Ingestion, QA/DevOps & Gestion de projet | **Ahmed Ben Ahmed** (chef) | NiFi→InfluxDB pipeline, FastAPI relay/analytics, CI, integration |
-| A — Cœur AR (Vuforia / Android) | **Zahra JABER** | AR session, anchoring, Vuforia lifecycle, target registry |
-| B — Reconnaissance de machine | **Wissal CHEIKH** | Vuforia image targets, target→machine bridge, `SmartexMachines.dat` |
-| C — Interface / Overlay temps réel | **Radwa Tourabi** | Floating data panel, data binding, billboard |
-| D — Flux de maintenance AR | **Maryam Mouaki** | Step-by-step procedures, AR callouts, step logging |
-| F — Formation & onboarding | **Hiba Marir** | Multilingual (ar/fr/en) labelling + quiz, progress |
-| Assistant IA | **Aboulaakoul Elwalid** | Grounded Mistral assistant, deterministic fallback |
-
-Detailed per-module documentation is in each member's report (annexed in the final PDF, see §2).
-
----
-
-## 11. Git & LFS workflow
-
-- Large binaries (FBX, PNG/JPG, DLL, `.tgz`, `.mp4`, …) are tracked via **Git LFS** (`.gitattributes`).
-  Run `git lfs install` once, and `git lfs pull` after cloning.
-- The demo video (`Docs/media/SmartexVR_demo.mkv`, §3) is committed through LFS.
-- Branch per feature (`feature/...`); `master` stays buildable; integration was done on a dedicated branch
-  and fast-forwarded after a clean headless compile.
+| Module | Responsable | Périmètre |
+|--------|-------------|-----------|
+| Backend, ingestion, QA/DevOps, gestion de projet | **Ahmed Ben Ahmed** | Pipeline NiFi/InfluxDB, FastAPI, analytics, CI, intégration |
+| A - Coeur AR | **Zahra JABER** | Session AR, Vuforia, ancrage et configuration Android |
+| B - Reconnaissance machine | **Wissal CHEIKH** | Image Targets Vuforia, mapping cible -> machine |
+| C - Overlay temps réel | **Radwa Tourabi** | Panneau AR, data binding, billboard |
+| D - Maintenance AR | **Maryam Mouaki** | Procédures guidées, callouts, journalisation |
+| E - Assistant IA | **Aboulaakoul Elwalid** | Mistral, fallback déterministe, explications de maintenance |
+| F - Formation et onboarding | **Hiba Marir** | Modules multilingues, quiz, progression utilisateur |
+| G - Intégration et documentation | **Ahmed Ben Ahmed** | Assemblage final, rapports, validation |
 
 ---
 
-## 12. Data conventions
+<a id="11-workflow-git-et-lfs"></a>
 
-| Thing | Convention |
-|-------|-----------|
-| Device IDs | `ESP32_TEX_001` … `ESP32_TEX_008` — read from `MachineData.device_id`, never hardcode |
-| Backend URL | `SmartexConfig.Instance.relayBaseUrl` — never hardcode `localhost` |
-| Data updates | Subscribe to `DataManager.OnSnapshotUpdated` — never poll manually |
-| Recognition | Vuforia behind `IMachineRecognizer` / `RecognizedMachine.AnchorTransform` |
-| Namespaces | One assembly per module: `Smartex.AR.Core`, `Smartex.AR.Recognition`, … |
-| Secrets | Vuforia license & Mistral key from environment only — never committed |
+## 11. Workflow Git et LFS
 
-`FactorySnapshot` carries `machines: List<MachineData>` (with `avg_power_watts`, `health_score`,
-`alert_level`, `co2_kg_today`, `cbam_contribution`, `is_online`, …) plus factory-level totals — the single
-source of truth shared by the VR twin and the AR overlay.
+- `master` doit rester buildable.
+- Créer une branche par fonctionnalité : `feature/module-x-nom`.
+- Ne pas commiter les dossiers générés par Unity (`Library/`, `Temp/`, `Obj/`, `Build/`, etc.).
+- Utiliser Git LFS pour les fichiers lourds déjà couverts par `.gitattributes`.
+- Après un clone ou un pull important, lancer :
+
+```bash
+git lfs pull
+```
+
+Avant une merge request :
+
+```bash
+git status
+cd backend && uv run pytest
+```
+
+Pour les changements Unity, ouvrir le projet et vérifier la console avant de pousser.
 
 ---
 
-*SmartexVR + AR — Groupe 1, ISIBD, ENSA Berrechid / Université Hassan 1er — 2025–2026.*
+<a id="12-conventions-techniques"></a>
+
+## 12. Conventions techniques
+
+| Élément | Convention |
+|---------|------------|
+| Identifiants machines | `ESP32_TEX_001` à `ESP32_TEX_008` |
+| Source Unity | `DataManager.Instance.LastSnapshot` et `OnSnapshotUpdated` |
+| URL backend | `SmartexConfig.Instance.relayBaseUrl` |
+| Reconnaissance AR | Vuforia, puis contrat `IMachineRecognizer` / `RecognizedMachine` |
+| Position des annotations | Coordonnées locales de la cible (`local_pos`) |
+| Services IA | Toujours via le backend |
+| Secrets | Jamais dans Git |
+
+`FactorySnapshot` est la source de vérité côté Unity. Il contient `machines: List<MachineData>` avec les champs `device_id`, `avg_power_watts`, `health_score`, `alert_level`, `co2_kg_today`, `cbam_contribution`, `is_online`, ainsi que les totaux usine.
+
+---
+
+*SmartexVR + AR - Groupe 1, ISIBD, ENSA Berrechid / Université Hassan 1er - 2025-2026.*
