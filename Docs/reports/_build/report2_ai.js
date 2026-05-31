@@ -1,0 +1,157 @@
+const L = require("./lib");
+const { H1, H2, H3, P, bullet, numItem, run, code, caption, image, table, spacer, cover, buildDoc, save } = L;
+const IMG = "images/";
+
+const coverChildren = cover({
+  school: "École Nationale des Sciences Appliquées (ENSA)",
+  filiere: "Filière Ingénierie en Systèmes d'Information et Big Data (ISIBD) — 2ème année (S8)",
+  year: "2025 – 2026",
+  projectTitle: "SmartexVR + AR",
+  projectSub: "Rapport de module\nAssistant de maintenance par Intelligence Artificielle",
+  reportType: "RAPPORT DE MODULE — ASSISTANT IA",
+  group: "Groupe 1",
+  author: "Aboulaakoul Elwalid",
+  role: "Module Assistant IA — Assistant conversationnel de maintenance (Mistral)",
+  supervisor: "Pr. Hrimech Hamid & Pr. Oumeima",
+  extra: [["Module", "Ingénierie et maquette numérique – projet AR"], ["Dépôt du code", "github.com/Ahmed-BenAhmed/SmartexVR"]],
+  logos: [{ path: "images/logo_uh1.png", h: 52 }, { path: "images/logo_ensab.png", h: 52 }],
+});
+
+const body = [
+  H1("1. Introduction et objectif du module"),
+  P("Ce rapport présente le module d'assistance par intelligence artificielle du projet SmartexVR. Son objectif est de fournir aux techniciens de maintenance un assistant conversationnel capable d'expliquer, en langage naturel et dans la langue de l'utilisateur (français, arabe ou anglais), l'état d'une machine textile et de recommander des actions concrètes."),
+  P("Le défi central d'un tel assistant en contexte industriel n'est pas la fluidité du langage — les grands modèles de langage (LLM) excellent déjà sur ce point — mais la fiabilité. Un assistant qui « invente » une mesure de capteur ou propose une action dangereuse fondée sur une donnée imaginaire serait pire qu'inutile. Le fil conducteur de ma conception a donc été l'ancrage factuel (grounding) et la robustesse : l'assistant ne doit jamais inventer de mesure, et le système doit rester opérationnel même lorsque le fournisseur d'IA est indisponible."),
+  P("Le module s'appuie sur le modèle Mistral via son API de complétion de conversation, encapsulé dans un client dédié côté backend (AssistantClient). Il n'est jamais appelé directement par le client Unity : l'application AR interroge le backend, qui seul détient la clé API et assemble le contexte factuel."),
+  image(IMG + "fig_ai_assistant.png", { alt: "Assistant IA ancré sur les données réelles" }),
+  caption("Figure 1 — Principe d'un assistant de maintenance ancré : les réponses sont construites à partir de sources factuelles (instantané machine, anomalies, historique) et non inventées."),
+
+  H1("2. Positionnement dans l'architecture"),
+  P("L'assistant IA est une couche du backend FastAPI, située en aval de la couche d'analytique déterministe. Le flux d'une requête « Demander à l'IA » est le suivant :"),
+  ...code([
+    "[Unity : bouton \"Demander à l'IA\"]",
+    "      |  POST /assist/query  { device_id, locale, question, ... }",
+    "      v",
+    "[Backend FastAPI]",
+    "   1. lit la télémétrie (snapshot + série 24 h)",
+    "   2. détecte les anomalies récentes (MAD)",
+    "   3. calcule un résumé de risque (RiskSummary)",
+    "   4. assemble un contexte factuel",
+    "      |",
+    "      v",
+    "[AssistantClient]",
+    "   - si clé Mistral présente -> appel Mistral (ancré sur le contexte)",
+    "   - sinon / si échec        -> réponse déterministe",
+    "      |",
+    "      v",
+    "[Réponse JSON: answer, actions, risk_level, sources, ai_provider]",
+  ]),
+  caption("Figure 2 — Place de l'assistant IA dans la chaîne de traitement."),
+  P("Ce positionnement garantit que l'IA ne voit jamais la donnée brute non qualifiée : elle reçoit un contexte déjà analysé (état, anomalies, risque), ce qui réduit fortement le risque d'hallucination et améliore la pertinence des réponses."),
+
+  H1("3. Conception des points d'accès"),
+  P("J'ai conçu trois points d'accès (endpoints) couvrant les besoins d'assistance du projet."),
+  table(
+    ["Endpoint", "Rôle"],
+    [
+      ["POST /assist/query", "Répondre à une question sur l'état d'une machine, avec actions recommandées et niveau de risque."],
+      ["POST /assist/sessions/{id}/summary", "Résumer une session d'assistance distante (échanges technicien ↔ expert)."],
+      ["POST /assist/sessions/{id}/report", "Rédiger un brouillon de rapport de maintenance à partir des messages d'une session."],
+    ],
+    [3400, 5626]
+  ),
+  caption("Tableau 1 — Points d'accès de l'assistant IA."),
+  H2("3.1. Contrat de la requête /assist/query"),
+  P("La requête précise la machine concernée, la langue souhaitée, la question, et deux drapeaux permettant d'enrichir le contexte avec les anomalies récentes et l'historique de maintenance."),
+  ...code([
+    "{",
+    "  \"device_id\": \"ESP32_TEX_003\",",
+    "  \"locale\": \"fr\",",
+    "  \"question\": \"Pourquoi cette machine est en alerte ?\",",
+    "  \"include_recent_anomalies\": true,",
+    "  \"include_maintenance_history\": true",
+    "}",
+  ]),
+  H2("3.2. Contrat de la réponse"),
+  P("La réponse est structurée et typée, afin que le client Unity puisse l'afficher de façon prévisible (réponse, liste d'actions, niveau de risque, sources mobilisées, et fournisseur ayant produit la réponse)."),
+  ...code([
+    "{",
+    "  \"answer\": \"...\",",
+    "  \"actions\": [\"...\"],",
+    "  \"risk_level\": \"critical\",",
+    "  \"sources\": [\"snapshot\", \"recent_anomalies\", \"maintenance_history\"],",
+    "  \"ai_provider\": \"mistral\"",
+    "}",
+  ]),
+  P("Le champ ai_provider est essentiel : il indique explicitement si la réponse provient du modèle Mistral ou du mécanisme de repli déterministe, assurant une transparence totale sur l'origine du conseil."),
+
+  H1("4. Intégration du modèle Mistral"),
+  P("L'appel au modèle est encapsulé dans la méthode interne du client. J'ai retenu des paramètres adaptés à un usage industriel : une température basse (0,2) pour privilégier des réponses déterministes et factuelles plutôt que créatives, et un plafond de jetons maîtrisé pour des réponses concises et actionnables."),
+  H2("4.1. L'invariant de prompt"),
+  P("Au cœur de l'ancrage se trouve un message système — l'invariant de prompt — qui contraint le comportement du modèle quelle que soit la question posée :"),
+  ...code([
+    "N'utiliser que l'instantané machine, les enregistrements",
+    "d'anomalies, les procédures et les messages de session fournis.",
+    "Si les preuves sont insuffisantes, indiquer quoi inspecter ensuite.",
+    "Ne jamais inventer de relevés de capteurs.",
+    "Renvoyer un conseil concis et actionnable pour un technicien.",
+  ]),
+  caption("Figure 3 — Traduction de l'invariant de prompt (PROMPT_INVARIANT)."),
+  P("Cet invariant interdit explicitement l'invention de mesures et impose au modèle, en cas de preuve insuffisante, de préciser ce qu'il faut inspecter plutôt que de spéculer. C'est la première ligne de défense contre l'hallucination."),
+  H2("4.2. Format d'échange et parsing"),
+  P("Le contexte factuel et le schéma de réponse attendu sont sérialisés en JSON et transmis au modèle. À la réception, le client tente d'extraire un objet JSON de la réponse (en tolérant les blocs de code Markdown). Si le modèle a renvoyé du texte libre non-JSON, ce texte est tout de même utilisé comme réponse, complété par les actions et le niveau de risque issus de l'analytique déterministe. Cette double stratégie garantit qu'une réponse exploitable est toujours produite."),
+
+  H1("5. Ancrage des réponses sur des faits"),
+  P("L'ancrage (grounding) est obtenu en assemblant, côté backend, un contexte riche et exclusivement factuel, avant tout appel au modèle. Ce contexte joue le rôle d'une mini-base de connaissances (approche de type RAG allégée) propre à la machine interrogée."),
+  table(
+    ["Élément de contexte", "Contenu", "Source"],
+    [
+      ["snapshot", "État courant de la machine (puissance, vibrations, températures, en ligne ?)", "Télémétrie (mock/InfluxDB)"],
+      ["risk_summary", "Niveau de risque, score de santé, explication, actions de base", "Analytique déterministe"],
+      ["recent_anomalies", "Jusqu'à 10 anomalies récentes (valeur, ligne de base, sévérité)", "Détection MAD"],
+      ["maintenance_history", "Historique des interventions journalisées", "Journal de maintenance"],
+    ],
+    [2400, 4226, 2400]
+  ),
+  caption("Tableau 2 — Composition du contexte factuel transmis au modèle."),
+  P("Le champ sources de la réponse reflète précisément les éléments effectivement mobilisés, ce qui permet de tracer l'origine de chaque conseil. La donnée provient toujours de la chaîne snapshot/analytique, jamais d'une saisie de l'utilisateur ou d'une invention du modèle."),
+
+  H1("6. Garde-fous et repli déterministe"),
+  P("La robustesse a été traitée comme une exigence de premier rang. L'assistant doit dégrader gracieusement, jamais brutalement."),
+  H2("6.1. Repli en l'absence de clé API"),
+  P("Si aucune clé Mistral n'est configurée, l'assistant n'échoue pas : il renvoie une réponse déterministe construite à partir du résumé de risque (explication + première action recommandée), avec ai_provider = \"deterministic\". Le système reste donc pleinement utilisable en démonstration ou hors connexion."),
+  H2("6.2. Repli en cas d'échec ou de réponse malformée"),
+  P("Au-delà de la simple absence de clé, j'ai durci la gestion des erreurs. Un appel peut échouer de multiples façons : erreur réseau ou HTTP, mais aussi — plus insidieux — une réponse HTTP 200 dont le corps est malformé (JSON invalide, liste de choix vide). Dans la version initiale, ce dernier cas n'était pas capturé et pouvait provoquer une erreur 500 propagée jusqu'au client Unity."),
+  P("La gestion d'erreurs a été élargie pour intercepter l'ensemble de ces cas (erreurs HTTP, mais aussi ValueError, KeyError, IndexError, TypeError) et basculer systématiquement sur la réponse déterministe. L'assistant ne renvoie ainsi jamais d'erreur au client : il dégrade vers un conseil fiable issu de l'analytique. Des tests de régression couvrant ces scénarios ont été ajoutés."),
+  H2("6.3. Sécurité"),
+  bullet("La clé API Mistral n'est jamais embarquée dans le client Unity ni versionnée dans le dépôt ; elle est lue depuis l'environnement côté backend uniquement."),
+  bullet("Le client Unity n'appelle jamais Mistral directement : toute la logique d'IA est confinée au backend."),
+  bullet("Le modèle ne reçoit que des données déjà qualifiées, jamais d'accès direct à la base ou aux secrets."),
+
+  H1("7. Résumé de session et rapport de maintenance"),
+  P("Au-delà de la question-réponse, l'assistant valorise les sessions d'assistance distante. Deux fonctions complémentaires exploitent l'historique des messages d'une session (échanges, annotations, recommandations) :"),
+  numItem("Résumé de session : produit une synthèse concise des échanges entre le technicien et l'expert distant, utile pour la traçabilité."),
+  numItem("Brouillon de rapport de maintenance : rédige automatiquement une première version de rapport d'intervention à partir des messages de la session, que le technicien n'a plus qu'à valider et compléter."),
+  P("Comme pour /assist/query, ces deux fonctions disposent d'un repli déterministe : en l'absence de modèle, elles construisent un résumé à partir des derniers messages structurés de la session, garantissant un livrable même hors IA."),
+
+  H1("8. Tests et robustesse"),
+  P("Le module est couvert par des tests automatisés au sein de la suite backend (16 tests au total). Les tests propres au client d'assistance vérifient notamment :"),
+  bullet("le repli déterministe lorsque la clé API est absente ;"),
+  bullet("le bon parsing d'une réponse JSON valide du modèle ;"),
+  bullet("la tolérance aux réponses encadrées par des blocs de code Markdown ;"),
+  bullet("le repli en cas de corps de réponse malformé (JSON invalide, choix vides) sans propagation d'erreur ;"),
+  bullet("la cohérence du champ ai_provider selon le chemin emprunté."),
+  P("Un test de bout en bout a par ailleurs été exécuté contre un serveur réel, en simulant successivement les cas « clé absente », « clé invalide » (réponse 401 du fournisseur) et réponse malformée : dans tous les cas, l'endpoint /assist/query renvoie un code HTTP 200 et un conseil exploitable, validant la stratégie de dégradation gracieuse."),
+  image(IMG + "m_ai_evidence.png", { alt: "Tableau de bord de preuve de la couche IA", maxH: 470 }),
+  caption("Figure 4 — Preuve de fonctionnement de la couche IA : santé de l'API, IA configurée (fournisseur Mistral), machine analysée (ESP32_TEX_003) avec anomalies détectées, et réponse technicien réellement générée par l'IA avec ses actions recommandées."),
+
+  H1("9. Limites et perspectives"),
+  P("Le module remplit son objectif d'assistant fiable et ancré, mais plusieurs pistes d'amélioration se dégagent :"),
+  bullet("Enrichissement du contexte : intégrer les procédures de maintenance complètes et les manuels machine comme sources supplémentaires d'ancrage."),
+  bullet("Mémoire conversationnelle : conserver le fil d'une conversation multi-tours pour des échanges plus naturels."),
+  bullet("Interface vocale : ajouter une reconnaissance vocale (STT) pour poser les questions mains-libres, pertinent en environnement de maintenance."),
+  bullet("Évaluation qualitative : mettre en place un protocole d'évaluation de la pertinence et de la sûreté des réponses, en lien avec la contribution scientifique du projet sur la confiance accordée aux agents LLM en contexte industriel."),
+  P("En conclusion, ce module démontre qu'un assistant LLM peut être intégré de manière responsable dans un outil industriel critique, à condition de subordonner la génération de langage à un socle factuel rigoureux et de prévoir un repli déterministe systématique."),
+];
+
+const doc = buildDoc({ coverChildren, tocTitle: "Sommaire", body });
+save(doc, process.argv[2]).then((p) => console.log("WROTE", p));
