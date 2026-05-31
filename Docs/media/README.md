@@ -1,1 +1,1 @@
-Demo video (SmartexVR_demo.mp4) will be added here.
+Demo walkthrough of the SmartexVR + AR application: SmartexVR_demo.mkv (Git LFS).

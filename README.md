@@ -81,14 +81,12 @@ Additional design docs: [`Docs/CLAUDE_UNITY_CONNECTION_HANDOFF.md`](Docs/CLAUDE_
 
 ## 3. Demo video
 
-A walkthrough/demo video of the working application will be added to the repository at:
+A walkthrough/demo video of the working application is included in the repository (tracked via Git LFS,
+see [§11](#11-git--lfs-workflow)):
 
-```
-Docs/media/SmartexVR_demo.mp4
-```
+🎥 **[`Docs/media/SmartexVR_demo.mkv`](Docs/media/SmartexVR_demo.mkv)**
 
-> 🎥 **Status: to be added.** The video (tracked via Git LFS, see [§11](#11-git--lfs-workflow)) will be pushed
-> at the above path once recorded; this section will then link to it directly.
+> Download the file to play it locally (GitHub does not stream `.mkv` inline).
 
 ---
 
@@ -322,7 +320,7 @@ Detailed per-module documentation is in each member's report (annexed in the fin
 
 - Large binaries (FBX, PNG/JPG, DLL, `.tgz`, `.mp4`, …) are tracked via **Git LFS** (`.gitattributes`).
   Run `git lfs install` once, and `git lfs pull` after cloning.
-- The demo video (`Docs/media/SmartexVR_demo.mp4`, §3) will be committed through LFS.
+- The demo video (`Docs/media/SmartexVR_demo.mkv`, §3) is committed through LFS.
 - Branch per feature (`feature/...`); `master` stays buildable; integration was done on a dedicated branch
   and fast-forwarded after a clean headless compile.
 
