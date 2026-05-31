@@ -81,12 +81,13 @@ Additional design docs: [`Docs/CLAUDE_UNITY_CONNECTION_HANDOFF.md`](Docs/CLAUDE_
 
 ## 3. Demo video
 
-A walkthrough/demo video of the working application is included in the repository (tracked via Git LFS,
-see [§11](#11-git--lfs-workflow)):
+A walkthrough/demo video of the working application:
 
-🎥 **[`Docs/media/SmartexVR_demo.mkv`](Docs/media/SmartexVR_demo.mkv)**
+▶️ **[Watch the demo on Google Drive](https://drive.google.com/file/d/1v2tkMdKLTbN0WfvOwtlpBEgO-JCsPM08/view?usp=sharing)**
 
-> Download the file to play it locally (GitHub does not stream `.mkv` inline).
+It is also included in the repository (tracked via Git LFS, see [§11](#11-git--lfs-workflow)):
+🎥 **[`Docs/media/SmartexVR_demo.mkv`](Docs/media/SmartexVR_demo.mkv)** — download to play locally (GitHub does
+not stream `.mkv` inline).
 
 ---
 
